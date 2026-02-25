@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ACC Track Guides</title>
+<link rel="manifest" href="manifest.json">
+<!-- iOS PWA support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ACC Guides">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#0a0a0c">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;900&family=Barlow:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0c;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --accent: #e8ff00;
+    --accent2: #ff4400;
+    --gold: #ffa500;
+    --edit: #00c8ff;
+    --text: #f0f0f0;
+    --muted: #666680;
+    --border: #2a2a3a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+  /* ── HEADER ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    background: var(--surface); position: sticky; top: 0; z-index: 100; gap: 12px;
+  }
+  .logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; }
+  .logo span { color: var(--accent); }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .hdr-btn {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 12px;
+    border-radius: 3px; cursor: pointer; transition: all 0.2s; border: 1px solid var(--border);
+    background: none; color: var(--muted); white-space: nowrap;
+  }
+  .hdr-btn:hover { border-color: var(--edit); color: var(--edit); }
+  .hdr-btn.active { background: var(--edit); color: #000; border-color: var(--edit); }
+  .edit-mode-bar {
+    display: none; background: #001f2e; border-bottom: 2px solid var(--edit);
+    padding: 8px 20px; font-size: 12px; color: var(--edit); letter-spacing: 0.05em;
+    align-items: center; gap: 10px;
+  }
+  .edit-mode-bar.visible { display: flex; }
+  .edit-mode-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--edit); animation: blink 1s infinite; flex-shrink: 0; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:.2} }
+
+  /* ── TRACK LIST ── */
+  #track-list { padding: 28px 20px; }
+  .section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
+  .track-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .track-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; cursor: pointer; transition: border-color .2s, transform .15s; }
+  .track-card:active { transform: scale(.98); }
+  .track-card:hover { border-color: var(--accent); }
+  .track-card-img { width: 100%; height: 160px; object-fit: contain; background: #ffffff; padding: 14px; filter: brightness(.95); transition: filter .2s; display: block; }
+  .track-card:hover .track-card-img { filter: brightness(1); }
+  .track-card-info { padding: 12px 14px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .track-card-name { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+  .track-card-country { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .track-card-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex-shrink: 0; }
+  .track-corner-count { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; color: var(--accent); }
+  .track-laptime-badge { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 600; color: var(--gold); }
+
+  /* ── TRACK VIEW ── */
+  #track-view { display: none; }
+
+  /* Tab bar */
+  .track-tabs { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .track-tab {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+    letter-spacing: .1em; text-transform: uppercase; padding: 12px 20px; cursor: pointer;
+    border-bottom: 2px solid transparent; color: var(--muted); transition: color .15s, border-color .15s;
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .track-tab:hover { color: var(--text); }
+  .track-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .track-header { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .back-btn { background: none; border: 1px solid var(--border); color: var(--text); font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; padding: 7px 12px; border-radius: 3px; cursor: pointer; transition: border-color .2s, color .2s; white-space: nowrap; }
+  .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .track-title { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
+  .track-subtitle { font-size: 12px; color: var(--muted); }
+
+  /* TAB PANELS */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── MAP PANEL ── */
+  /* KEY FIX #1: map fills viewport height minus header/tabs */
+  .map-container {
+    margin: 20px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+  }
+  .map-instruction { text-align: center; font-size: 12px; color: var(--muted); padding: 8px; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
+  .map-instruction span { color: var(--accent); }
+  .map-instruction.edit-hint span { color: var(--edit); }
+  .map-inner { position: relative; width: 100%; }
+  .map-inner.edit-cursor { cursor: crosshair; }
+
+  /* KEY FIX #1: image fills container width AND constrains height so it never overflows */
+  .track-map-img {
+    width: 100%;
+    height: auto;
+    max-height: calc(100vh - 220px); /* viewport minus header + tabs + toolbar */
+    display: block;
+    object-fit: contain;
+    background: #ffffff;
+    padding: 20px;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  /* Corner buttons */
+  .corner-btn {
+    position: absolute; width: 34px; height: 34px; border-radius: 50%;
+    background: var(--accent2); border: 2px solid var(--accent); color: #fff;
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transform: translate(-50%,-50%); transition: background .15s, transform .15s;
+    animation: pulse 2.5s infinite; z-index: 10;
+  }
+  .corner-btn:hover, .corner-btn:active { background: var(--accent); color: #000; transform: translate(-50%,-50%) scale(1.2); animation: none; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(255,68,0,.5)}70%{box-shadow:0 0 0 8px rgba(255,68,0,0)}100%{box-shadow:0 0 0 0 rgba(255,68,0,0)} }
+  .corner-btn.edit-mode { background: var(--edit); border-color: #fff; color: #000; animation: none; cursor: grab; }
+  .corner-btn.edit-mode:hover { background: #fff; transform: translate(-50%,-50%) scale(1.15); }
+  .corner-btn.edit-mode.dragging { cursor: grabbing; transform: translate(-50%,-50%) scale(1.2); opacity: .85; }
+  .corner-edit-actions { position: absolute; display: flex; gap: 4px; z-index: 20; transform: translateX(-50%); white-space: nowrap; }
+  .corner-action-btn { font-size: 10px; font-weight: 700; letter-spacing: .05em; padding: 3px 7px; border-radius: 2px; cursor: pointer; border: none; font-family: 'Barlow Condensed', sans-serif; }
+  .corner-action-btn.edit-btn { background: var(--edit); color: #000; }
+  .corner-action-btn.del-btn { background: var(--accent2); color: #fff; }
+
+  /* Edit toolbar */
+  .edit-toolbar { display: none; padding: 12px 20px; border-top: 1px solid var(--border); background: #001824; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .edit-toolbar.visible { display: flex; }
+  .toolbar-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 8px 16px; border-radius: 3px; cursor: pointer; border: 1px solid; transition: all .15s; }
+  .toolbar-btn.export { background: var(--accent); color: #000; border-color: var(--accent); }
+  .toolbar-btn.export:hover { background: #c8e000; }
+  .toolbar-btn.secondary { background: none; color: var(--edit); border-color: var(--edit); }
+  .toolbar-btn.secondary:hover { background: rgba(0,200,255,.1); }
+  .toolbar-info { font-size: 12px; color: var(--muted); margin-left: auto; }
+
+  /* ── LAP TIMES PANEL ── */
+  .laptimes-panel { padding: 20px; }
+  .laptimes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  .laptimes-title { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); }
+  .add-laptime-btn {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; padding: 8px 16px; border-radius: 3px;
+    cursor: pointer; background: var(--accent); color: #000; border: none; transition: background .15s;
+  }
+  .add-laptime-btn:hover { background: #c8e000; }
+  .laptimes-empty { text-align: center; padding: 50px 20px; color: var(--muted); }
+  .laptimes-empty .icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+  .laptimes-empty p { font-size: 13px; }
+  .laptimes-list { display: flex; flex-direction: column; gap: 10px; }
+  .laptime-row {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: 14px 16px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px;
+    transition: border-color .15s;
+  }
+  .laptime-row.best { border-color: var(--gold); }
+  .laptime-rank { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--muted); width: 28px; text-align: center; }
+  .laptime-row.best .laptime-rank { color: var(--gold); }
+  .laptime-info { min-width: 0; }
+  .laptime-time { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; letter-spacing: .04em; color: var(--text); line-height: 1; }
+  .laptime-row.best .laptime-time { color: var(--gold); }
+  .laptime-car { font-size: 13px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .laptime-meta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .laptime-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .laptime-action { background: none; border: 1px solid var(--border); color: var(--muted); padding: 5px 8px; border-radius: 3px; cursor: pointer; font-size: 12px; transition: all .15s; }
+  .laptime-action:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Weather tags */
+  .weather-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; letter-spacing: .06em; padding: 2px 8px; border-radius: 20px; border: 1px solid; font-family: 'Barlow Condensed', sans-serif; }
+  .weather-tag.dry     { color: #ffcc00; border-color: #ffcc0055; background: #ffcc0015; }
+  .weather-tag.wet     { color: #4fc3f7; border-color: #4fc3f755; background: #4fc3f715; }
+  .weather-tag.mixed   { color: #aed581; border-color: #aed58155; background: #aed58115; }
+  .weather-tag.damp    { color: #90caf9; border-color: #90caf955; background: #90caf915; }
+
+  /* Weather picker in modal */
+  .weather-picker { display: flex; gap: 8px; flex-wrap: wrap; }
+  .weather-option {
+    display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 4px;
+    border: 1px solid var(--border); cursor: pointer; font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em; background: var(--surface2);
+    color: var(--muted); transition: all .15s; user-select: none;
+  }
+  .weather-option:hover { border-color: var(--text); color: var(--text); }
+  .weather-option.selected.dry   { border-color: #ffcc00; color: #ffcc00; background: #ffcc0018; }
+  .weather-option.selected.wet   { border-color: #4fc3f7; color: #4fc3f7; background: #4fc3f718; }
+  .weather-option.selected.mixed { border-color: #aed581; color: #aed581; background: #aed58118; }
+  .weather-option.selected.damp  { border-color: #90caf9; color: #90caf9; background: #90caf918; }
+
+  /* ── CORNER VIEW MODAL — fills most of the screen ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.92); z-index: 1000;
+    align-items: center; justify-content: center;
+    padding: 16px; backdrop-filter: blur(8px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    /* Force it to use nearly all the viewport */
+    width: min(1100px, calc(100vw - 32px));
+    height: min(800px, calc(100vh - 32px));
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    animation: modalIn .2s ease-out;
+  }
+  @keyframes modalIn { from{opacity:0;transform:scale(.95) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)} }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    background: var(--surface2); flex-shrink: 0; gap: 12px;
+  }
+  .modal-corner-label { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; flex: 1; min-width: 0; }
+  .modal-corner-label .num { color: var(--accent); margin-right: 10px; }
+
+  /* Swipe nav arrows */
+  .modal-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .modal-nav-btn {
+    background: none; border: 1px solid var(--border); color: var(--text);
+    width: 36px; height: 36px; border-radius: 4px; cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .modal-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .modal-nav-btn:disabled { opacity: .25; cursor: default; pointer-events: none; }
+  .modal-nav-counter {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--muted); letter-spacing: .08em; min-width: 42px; text-align: center;
+  }
+
+  /* Swipe gesture hint dots */
+  .modal-dots {
+    display: flex; gap: 5px; align-items: center;
+    justify-content: center; padding: 8px 0 4px;
+    border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface2);
+  }
+  .modal-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--border);
+    transition: background .2s, transform .2s;
+  }
+  .modal-dot.active { background: var(--accent); transform: scale(1.4); }
+
+  /* Slide animation */
+  .modal-body { position: relative; }
+  .modal-body.slide-left  { animation: slideLeft  .22s ease-out; }
+  .modal-body.slide-right { animation: slideRight .22s ease-out; }
+  @keyframes slideLeft  { from { opacity:.4; transform: translateX(40px);  } to { opacity:1; transform: translateX(0); } }
+  @keyframes slideRight { from { opacity:.4; transform: translateX(-40px); } to { opacity:1; transform: translateX(0); } }
+  .modal-close {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    width: 36px; height: 36px; border-radius: 4px; cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .2s, color .2s; flex-shrink: 0;
+  }
+  .modal-close:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* Two-column body: image takes 60%, notes take 40% */
+  .modal-body {
+    display: grid;
+    grid-template-columns: 60fr 40fr;
+    flex: 1;
+    min-height: 0; /* critical for flex children to shrink */
+  }
+  .modal-img-col {
+    background: #ffffff; border-right: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .modal-img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    padding: 28px;
+    display: block;
+  }
+  .modal-img-placeholder {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 12px; color: var(--muted); padding: 48px; text-align: center;
+  }
+  .modal-img-placeholder .icon { font-size: 52px; opacity: .3; }
+  .modal-img-placeholder p { font-size: 13px; line-height: 1.6; }
+  .modal-notes-col {
+    padding: 24px; display: flex; flex-direction: column;
+    gap: 14px; overflow-y: auto;
+  }
+  .note-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 5px; padding: 14px 16px; }
+  .note-chip-label { font-size: 10px; font-weight: 600; letter-spacing: .15em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+  .note-chip-value { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 700; }
+  .note-chip-value.gear { color: var(--accent); }
+  .note-chip-value.brake { color: var(--accent2); }
+  .note-chip-value.small { font-size: 15px; font-weight: 400; font-family: 'Barlow', sans-serif; color: var(--text); line-height: 1.7; }
+
+  /* Narrow screens: stack vertically */
+  @media (max-width: 640px) {
+    .modal { width: calc(100vw - 20px); height: calc(100vh - 20px); border-radius: 8px; }
+    .modal-body { grid-template-columns: 1fr; grid-template-rows: 55% 45%; }
+    .modal-img-col { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+
+  /* ── EDIT CORNER MODAL ── */
+  .edit-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 2000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+  .edit-modal-overlay.open { display: flex; }
+  .edit-modal { background: var(--surface); border: 1px solid var(--edit); border-radius: 8px; width: 100%; max-width: 500px; max-height: 92vh; overflow-y: auto; animation: modalIn .2s ease-out; }
+  .edit-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); background: #001824; position: sticky; top: 0; z-index: 1; }
+  .edit-modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--edit); }
+  .edit-modal-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .field-group { display: flex; flex-direction: column; gap: 5px; }
+  .field-label { font-size: 10px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+  .field-input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-family: 'Barlow', sans-serif; font-size: 14px; padding: 9px 12px; border-radius: 3px; outline: none; transition: border-color .2s; width: 100%; }
+  .field-input:focus { border-color: var(--edit); }
+  .field-input::placeholder { color: var(--muted); }
+  textarea.field-input { resize: vertical; min-height: 70px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .img-pick-area { border: 2px dashed var(--border); border-radius: 4px; padding: 16px; text-align: center; cursor: pointer; transition: border-color .2s; background: var(--surface2); }
+  .img-pick-area:hover { border-color: var(--edit); }
+  .img-pick-area .img-preview { max-width: 100%; max-height: 140px; object-fit: contain; display: none; }
+  .img-pick-area p { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .img-filename { font-size: 11px; color: var(--edit); margin-top: 4px; word-break: break-all; }
+  .edit-modal-footer { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; background: var(--surface2); position: sticky; bottom: 0; }
+  .save-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 9px 20px; border-radius: 3px; cursor: pointer; border: none; background: var(--edit); color: #000; transition: background .15s; }
+  .save-btn:hover { background: #00e0ff; }
+  .cancel-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 9px 16px; border-radius: 3px; cursor: pointer; background: none; border: 1px solid var(--border); color: var(--muted); transition: all .15s; }
+  .cancel-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  /* ── LAP TIME ENTRY MODAL ── */
+  .laptime-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 2500; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+  .laptime-modal-overlay.open { display: flex; }
+  .laptime-modal { background: var(--surface); border: 1px solid var(--gold); border-radius: 8px; width: 100%; max-width: 420px; overflow: hidden; animation: modalIn .2s ease-out; }
+  .laptime-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); background: #1a1000; }
+  .laptime-modal-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+  .laptime-modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .time-input-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; align-items: end; }
+  .time-sep { font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 900; color: var(--muted); text-align: center; padding-bottom: 6px; }
+  .laptime-modal-footer { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; background: var(--surface2); }
+  .save-laptime-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 9px 20px; border-radius: 3px; cursor: pointer; border: none; background: var(--gold); color: #000; transition: background .15s; }
+  .save-laptime-btn:hover { background: #ffb733; }
+
+  /* ── EXPORT MODAL ── */
+  .export-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 3000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+  .export-modal-overlay.open { display: flex; }
+  .export-modal { background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; width: 100%; max-width: 540px; overflow: hidden; animation: modalIn .2s ease-out; }
+  .export-header { padding: 14px 18px; border-bottom: 1px solid var(--border); background: #0d1200; display: flex; justify-content: space-between; align-items: center; }
+  .export-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  .export-body { padding: 18px; }
+  .export-steps { display: flex; flex-direction: column; gap: 12px; }
+  .export-step { display: flex; gap: 12px; align-items: flex-start; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #000; font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .step-text code { background: var(--surface2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 2px; font-size: 12px; color: var(--accent); }
+  .export-footer { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+  .download-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 10px 22px; border-radius: 3px; cursor: pointer; border: none; background: var(--accent); color: #000; transition: background .15s; }
+  .download-btn:hover { background: #c8e000; }
+
+  @media (max-width: 500px) {
+    .field-row { grid-template-columns: 1fr; }
+    .map-container { margin: 10px; }
+    .time-input-row { grid-template-columns: 1fr; }
+    .time-sep { display: none; }
+    .track-tab { padding: 10px 14px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">GT3 <span>Corner</span> Guide</div>
+  <div class="header-right">
+    <button class="hdr-btn" id="edit-toggle-btn" onclick="toggleEditMode()">✏️ Edit Mode</button>
+  </div>
+</header>
+
+<div class="edit-mode-bar" id="edit-mode-bar">
+  <div class="dot"></div>
+  <span>EDIT MODE — Tap map to add corner · Drag to reposition</span>
+</div>
+
+<!-- TRACK LIST -->
+<div id="track-list">
+  <div style="padding:28px 20px">
+    <p class="section-label">Select Circuit</p>
+    <div class="track-grid" id="track-grid"></div>
+  </div>
+</div>
+
+<!-- TRACK VIEW -->
+<div id="track-view">
+  <div class="track-header">
+    <button class="back-btn" onclick="showTrackList()">← Back</button>
+    <div style="flex:1;min-width:0">
+      <div class="track-title" id="view-track-name"></div>
+      <div class="track-subtitle" id="view-track-country"></div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="track-tabs">
+    <button class="track-tab active" id="tab-map-btn" onclick="switchTab('map')">🗺 Map</button>
+    <button class="track-tab" id="tab-laps-btn" onclick="switchTab('laps')">⏱ Lap Times</button>
+  </div>
+
+  <!-- Map panel -->
+  <div class="tab-panel active" id="tab-map">
+    <div class="map-container">
+      <div class="map-instruction" id="map-instruction">
+        <span>Tap</span> a corner marker to view braking notes
+      </div>
+      <div class="map-inner" id="map-inner">
+        <img class="track-map-img" id="track-map-img" src="" alt="Track map" draggable="false">
+      </div>
+    </div>
+    <div class="edit-toolbar" id="edit-toolbar">
+      <button class="toolbar-btn export" onclick="showExportModal()">⬇ Export data.js</button>
+      <button class="toolbar-btn secondary" onclick="clearAllCorners()">✕ Clear Corners</button>
+      <span class="toolbar-info" id="corner-count-label"></span>
+    </div>
+  </div>
+
+  <!-- Lap Times panel -->
+  <div class="tab-panel" id="tab-laps">
+    <div class="laptimes-panel">
+      <div class="laptimes-header">
+        <div class="laptimes-title">Personal Lap Times</div>
+        <button class="add-laptime-btn" onclick="openLaptimeModal(null)">+ Add Lap Time</button>
+      </div>
+      <div id="laptimes-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── VIEW CORNER MODAL ── -->
+<div class="modal-overlay" id="view-modal" onclick="closeViewModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-nav">
+        <button class="modal-nav-btn" id="nav-prev" onclick="navigateCorner(-1)" title="Previous corner (←)">‹</button>
+        <div class="modal-nav-counter" id="nav-counter"></div>
+        <button class="modal-nav-btn" id="nav-next" onclick="navigateCorner(1)" title="Next corner (→)">›</button>
+      </div>
+      <div class="modal-corner-label" id="modal-title"></div>
+      <button class="modal-close" onclick="closeViewModal()">✕</button>
+    </div>
+    <div class="modal-dots" id="modal-dots"></div>
+    <div class="modal-body" id="modal-body">
+      <div class="modal-img-col" id="modal-img-wrap"></div>
+      <div class="modal-notes-col" id="modal-notes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── EDIT CORNER MODAL ── -->
+<div class="edit-modal-overlay" id="edit-modal">
+  <div class="edit-modal">
+    <div class="edit-modal-header">
+      <div class="edit-modal-title" id="edit-modal-title">Add Corner</div>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="edit-modal-body">
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Corner ID</label>
+          <input class="field-input" id="field-id" placeholder="e.g. T1" maxlength="6">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Corner Name</label>
+          <input class="field-input" id="field-name" placeholder="e.g. La Source">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Gear</label>
+          <input class="field-input" id="field-gear" placeholder="e.g. 2nd">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Brake Point</label>
+          <input class="field-input" id="field-brake" placeholder="e.g. ~100m board">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label class="field-label">Min Speed</label>
+          <input class="field-input" id="field-speed" placeholder="e.g. ~70 km/h">
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Driver Notes</label>
+        <textarea class="field-input" id="field-notes" placeholder="Key technique, reference points, warnings..."></textarea>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Braking Zone Image</label>
+        <div class="img-pick-area" id="img-pick-area" onclick="document.getElementById('img-file-input').click()">
+          <img id="img-preview" class="img-preview" alt="preview">
+          <p id="img-pick-text">📷 Tap to select image</p>
+          <div class="img-filename" id="img-filename"></div>
+        </div>
+        <input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImgPick(event)">
+        <p style="font-size:11px;color:var(--muted);margin-top:4px">
+          ⚠️ Image must be in <code style="background:var(--surface2);padding:1px 4px;border-radius:2px;color:var(--edit)">tracks/[track-id]/</code> folder. Only the filename is stored.
+        </p>
+      </div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+      <button class="save-btn" onclick="saveCorner()">Save Corner</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── LAP TIME ENTRY MODAL ── -->
+<div class="laptime-modal-overlay" id="laptime-modal">
+  <div class="laptime-modal">
+    <div class="laptime-modal-header">
+      <div class="laptime-modal-title" id="laptime-modal-title">Add Lap Time</div>
+      <button class="modal-close" onclick="closeLaptimeModal()">✕</button>
+    </div>
+    <div class="laptime-modal-body">
+      <div class="field-group">
+        <label class="field-label">Car / Setup</label>
+        <input class="field-input" id="lt-car" placeholder="e.g. Ferrari 296 GT3, Balance setup">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Lap Time</label>
+        <div class="time-input-row">
+          <div class="field-group">
+            <label class="field-label" style="font-size:9px">Minutes</label>
+            <input class="field-input" id="lt-min" type="number" min="0" max="99" placeholder="2" style="font-size:22px;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center">
+          </div>
+          <div class="time-sep" style="display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px">:</div>
+          <div class="field-group">
+            <label class="field-label" style="font-size:9px">Seconds</label>
+            <input class="field-input" id="lt-sec" type="number" min="0" max="59" placeholder="18" style="font-size:22px;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center">
+          </div>
+          <div class="time-sep" style="display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px">.</div>
+          <div class="field-group">
+            <label class="field-label" style="font-size:9px">Milliseconds</label>
+            <input class="field-input" id="lt-ms" type="number" min="0" max="999" placeholder="423" style="font-size:22px;font-family:'Barlow Condensed',sans-serif;font-weight:700;text-align:center">
+          </div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Conditions</label>
+        <div class="weather-picker" id="weather-picker">
+          <div class="weather-option dry"   data-weather="dry"   onclick="selectWeather('dry')"  >☀️ Dry</div>
+          <div class="weather-option damp"  data-weather="damp"  onclick="selectWeather('damp')" >🌫️ Damp</div>
+          <div class="weather-option mixed" data-weather="mixed" onclick="selectWeather('mixed')">🌦️ Mixed</div>
+          <div class="weather-option wet"   data-weather="wet"   onclick="selectWeather('wet')"  >🌧️ Wet</div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Session / Event (optional)</label>
+        <input class="field-input" id="lt-session" placeholder="e.g. Race 1, Qualifying, Practice">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Date (optional)</label>
+        <input class="field-input" id="lt-date" type="date">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Notes (optional)</label>
+        <textarea class="field-input" id="lt-notes" placeholder="Conditions, setup changes, observations..." style="min-height:55px"></textarea>
+      </div>
+    </div>
+    <div class="laptime-modal-footer">
+      <button class="cancel-btn" onclick="closeLaptimeModal()">Cancel</button>
+      <button class="save-laptime-btn" onclick="saveLapTime()">Save Lap</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── EXPORT MODAL ── -->
+<div class="export-modal-overlay" id="export-modal">
+  <div class="export-modal">
+    <div class="export-header">
+      <div class="export-title">Export Track Data</div>
+      <button class="modal-close" onclick="closeExportModal()">✕</button>
+    </div>
+    <div class="export-body">
+      <div class="export-steps">
+        <div class="export-step"><div class="step-num">1</div><div class="step-text">Click <strong>Download data.js</strong> below.</div></div>
+        <div class="export-step"><div class="step-num">2</div><div class="step-text">Replace <code>data.js</code> in your app folder with the downloaded file.</div></div>
+        <div class="export-step"><div class="step-num">3</div><div class="step-text">Braking images go in <code>tracks/[id]/</code> — e.g. <code>tracks/spa/t1.png</code></div></div>
+        <div class="export-step"><div class="step-num">4</div><div class="step-text">Reload. Corners appear exactly where placed. ✅</div></div>
+      </div>
+    </div>
+    <div class="export-footer">
+      <button class="cancel-btn" onclick="closeExportModal()">Cancel</button>
+      <button class="download-btn" onclick="downloadDataFile()">⬇ Download data.js</button>
+    </div>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+// ─────────────────────────────
+//  STATE
+// ─────────────────────────────
+let currentTrack = null;
+let editMode = false;
+let pendingCornerPos = null;
+let editingCornerId = null;
+let editingLaptimeId = null;
+let activeTab = 'map';
+
+// lap times stored in localStorage keyed by track id
+function getLaptimes(trackId) {
+  try { return JSON.parse(localStorage.getItem('gt3_laps_' + trackId) || '[]'); } catch(e) { return []; }
+}
+function saveLaptimes(trackId, arr) {
+  try { localStorage.setItem('gt3_laps_' + trackId, JSON.stringify(arr)); } catch(e) {}
+}
+
+// ─────────────────────────────
+//  INIT
+// ─────────────────────────────
+function init() {
+  if (typeof tracks === 'undefined') {
+    document.getElementById('track-list').innerHTML =
+      `<div style="padding:50px 20px;text-align:center;color:var(--muted)">
+        <div style="font-size:36px;margin-bottom:12px">⚠️</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;letter-spacing:.1em;text-transform:uppercase">data.js not found</div>
+        <div style="font-size:13px;margin-top:8px">Place <code>data.js</code> in the same folder as index.html</div>
+      </div>`;
+    return;
+  }
+  try {
+    const saved = localStorage.getItem('gt3_edits');
+    if (saved) {
+      const edits = JSON.parse(saved);
+      tracks.forEach(t => { if (edits[t.id]) t.corners = edits[t.id]; });
+    }
+  } catch(e) {}
+  renderTrackList();
+}
+
+function renderTrackList() {
+  const grid = document.getElementById('track-grid');
+  grid.innerHTML = '';
+  tracks.forEach(track => {
+    const laps = getLaptimes(track.id);
+    const bestLap = laps.length ? laps.reduce((b, l) => l.totalMs < b.totalMs ? l : b) : null;
+    const card = document.createElement('div');
+    card.className = 'track-card';
+    card.onclick = () => showTrack(track.id);
+    card.innerHTML = `
+      <img class="track-card-img" src="tracks/${track.id}/track.png" alt="${track.name}" onerror="this.style.opacity='.15'">
+      <div class="track-card-info">
+        <div style="min-width:0">
+          <div class="track-card-name">${track.name}</div>
+          <div class="track-card-country">${track.country}</div>
+        </div>
+        <div class="track-card-meta">
+          <span class="track-corner-count">${track.corners.length} corners</span>
+          ${bestLap ? `<span class="track-laptime-badge">🏆 ${bestLap.display}</span>` : ''}
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+// ─────────────────────────────
+//  TABS
+// ─────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-map').classList.toggle('active', tab === 'map');
+  document.getElementById('tab-laps').classList.toggle('active', tab === 'laps');
+  document.getElementById('tab-map-btn').classList.toggle('active', tab === 'map');
+  document.getElementById('tab-laps-btn').classList.toggle('active', tab === 'laps');
+  if (tab === 'laps') renderLaptimes();
+}
+
+// ─────────────────────────────
+//  TRACK VIEW
+// ─────────────────────────────
+function showTrack(id) {
+  currentTrack = tracks.find(t => t.id === id);
+  if (!currentTrack) return;
+  document.getElementById('track-list').style.display = 'none';
+  document.getElementById('track-view').style.display = 'block';
+  document.getElementById('view-track-name').textContent = currentTrack.name;
+  document.getElementById('view-track-country').textContent = currentTrack.country;
+
+  const img = document.getElementById('track-map-img');
+  img.src = `tracks/${currentTrack.id}/track.png`;
+
+  document.getElementById('edit-toolbar').classList.toggle('visible', editMode);
+  document.getElementById('map-inner').classList.toggle('edit-cursor', editMode);
+  document.getElementById('map-inner').onclick = handleMapClick;
+
+  img.onload = () => renderCorners();
+  if (img.complete && img.naturalWidth > 0) renderCorners();
+  updateMapInstruction();
+
+  // reset to map tab
+  switchTab('map');
+}
+
+function showTrackList() {
+  document.getElementById('track-view').style.display = 'none';
+  document.getElementById('track-list').style.display = 'block';
+  currentTrack = null;
+  renderTrackList();
+}
+
+function updateMapInstruction() {
+  const instr = document.getElementById('map-instruction');
+  instr.className = 'map-instruction' + (editMode ? ' edit-hint' : '');
+  instr.innerHTML = editMode
+    ? '<span>Tap map</span> to add a corner — <span>drag</span> markers to reposition'
+    : '<span>Tap</span> a corner marker to view braking notes';
+}
+
+// ─────────────────────────────
+//  EDIT MODE
+// ─────────────────────────────
+function toggleEditMode() {
+  editMode = !editMode;
+  document.getElementById('edit-toggle-btn').classList.toggle('active', editMode);
+  document.getElementById('edit-mode-bar').classList.toggle('visible', editMode);
+  if (currentTrack) {
+    document.getElementById('edit-toolbar').classList.toggle('visible', editMode);
+    document.getElementById('map-inner').classList.toggle('edit-cursor', editMode);
+    updateMapInstruction();
+    renderCorners();
+  }
+}
+
+// ─────────────────────────────
+//  CORNERS
+// ─────────────────────────────
+function renderCorners() {
+  document.querySelectorAll('.corner-btn, .corner-edit-actions').forEach(e => e.remove());
+  if (!currentTrack) return;
+  updateCornerCountLabel();
+  currentTrack.corners.forEach(corner => {
+    const btn = document.createElement('button');
+    btn.className = 'corner-btn' + (editMode ? ' edit-mode' : '');
+    btn.textContent = corner.id;
+    btn.dataset.cornerId = corner.id;
+    btn.style.left = corner.x + '%';
+    btn.style.top  = corner.y + '%';
+    if (editMode) {
+      setupDrag(btn, corner);
+      btn.onclick = e => { e.stopPropagation(); showCornerEditActions(corner, btn); };
+    } else {
+      btn.onclick = e => { e.stopPropagation(); openViewModal(corner); };
+    }
+    document.getElementById('map-inner').appendChild(btn);
+  });
+}
+
+function updateCornerCountLabel() {
+  const n = currentTrack ? currentTrack.corners.length : 0;
+  document.getElementById('corner-count-label').textContent = `${n} corner${n !== 1 ? 's' : ''} placed`;
+}
+
+function handleMapClick(e) {
+  if (!editMode) return;
+  if (e.target.classList.contains('corner-btn')) return;
+  document.querySelectorAll('.corner-edit-actions').forEach(el => el.remove());
+  const img = document.getElementById('track-map-img');
+  const rect = img.getBoundingClientRect();
+  const x = parseFloat(((e.clientX - rect.left) / rect.width * 100).toFixed(2));
+  const y = parseFloat(((e.clientY - rect.top)  / rect.height * 100).toFixed(2));
+  pendingCornerPos = { x, y };
+  editingCornerId = null;
+  openEditModal(null);
+}
+
+function setupDrag(btn, corner) {
+  let startX, startY, startLeft, startTop, moved;
+  function onStart(e) {
+    e.preventDefault(); e.stopPropagation(); moved = false;
+    const t = e.touches ? e.touches[0] : e;
+    startX = t.clientX; startY = t.clientY;
+    startLeft = corner.x; startTop = corner.y;
+    btn.classList.add('dragging');
+    document.querySelectorAll('.corner-edit-actions').forEach(el => el.remove());
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onEnd);
+  }
+  function onMove(e) {
+    e.preventDefault();
+    const t = e.touches ? e.touches[0] : e;
+    const img = document.getElementById('track-map-img');
+    const rect = img.getBoundingClientRect();
+    const dx = (t.clientX - startX) / rect.width  * 100;
+    const dy = (t.clientY - startY) / rect.height * 100;
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) moved = true;
+    corner.x = parseFloat(Math.max(0, Math.min(100, startLeft + dx)).toFixed(2));
+    corner.y = parseFloat(Math.max(0, Math.min(100, startTop  + dy)).toFixed(2));
+    btn.style.left = corner.x + '%';
+    btn.style.top  = corner.y + '%';
+  }
+  function onEnd() {
+    btn.classList.remove('dragging');
+    document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
+    document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
+    if (moved) saveEditsToSession();
+  }
+  btn.addEventListener('mousedown', onStart);
+  btn.addEventListener('touchstart', onStart, { passive: false });
+}
+
+function showCornerEditActions(corner, btn) {
+  document.querySelectorAll('.corner-edit-actions').forEach(el => el.remove());
+  const actions = document.createElement('div');
+  actions.className = 'corner-edit-actions';
+  actions.style.left = corner.x + '%';
+  actions.style.top  = (corner.y + 6) + '%';
+  const editBtn = document.createElement('button');
+  editBtn.className = 'corner-action-btn edit-btn'; editBtn.textContent = 'Edit';
+  editBtn.onclick = e => { e.stopPropagation(); actions.remove(); editingCornerId = corner.id; openEditModal(corner); };
+  const delBtn = document.createElement('button');
+  delBtn.className = 'corner-action-btn del-btn'; delBtn.textContent = 'Delete';
+  delBtn.onclick = e => { e.stopPropagation(); deleteCorner(corner.id); };
+  actions.appendChild(editBtn); actions.appendChild(delBtn);
+  document.getElementById('map-inner').appendChild(actions);
+}
+
+function deleteCorner(id) {
+  currentTrack.corners = currentTrack.corners.filter(c => c.id !== id);
+  saveEditsToSession(); renderCorners();
+}
+
+function clearAllCorners() {
+  if (!confirm(`Delete all ${currentTrack.corners.length} corners for ${currentTrack.name}?`)) return;
+  currentTrack.corners = []; saveEditsToSession(); renderCorners();
+}
+
+// ─────────────────────────────
+//  EDIT CORNER MODAL
+// ─────────────────────────────
+function openEditModal(corner) {
+  const isNew = !corner;
+  document.getElementById('edit-modal-title').textContent = isNew ? '+ Add Corner' : `Edit ${corner.id}`;
+  document.getElementById('field-id').value    = isNew ? '' : corner.id;
+  document.getElementById('field-name').value  = isNew ? '' : (corner.label || '');
+  document.getElementById('field-gear').value  = isNew ? '' : (corner.gear || '');
+  document.getElementById('field-brake').value = isNew ? '' : (corner.brakePoint || '');
+  document.getElementById('field-speed').value = isNew ? '' : (corner.speed || '');
+  document.getElementById('field-notes').value = isNew ? '' : (corner.notes || '');
+  document.getElementById('img-filename').textContent = isNew ? '' : (corner.imageFile || '');
+  document.getElementById('img-pick-text').textContent = '📷 Tap to select image';
+  const preview = document.getElementById('img-preview');
+  if (!isNew && corner.imageFile) {
+    preview.src = `tracks/${currentTrack.id}/${corner.imageFile}`;
+    preview.style.display = 'block';
+    document.getElementById('img-pick-text').style.display = 'none';
+  } else {
+    preview.src = ''; preview.style.display = 'none';
+    document.getElementById('img-pick-text').style.display = 'block';
+  }
+  document.getElementById('edit-modal').classList.add('open');
+  setTimeout(() => document.getElementById('field-id').focus(), 100);
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+  pendingCornerPos = null; editingCornerId = null;
+}
+
+function handleImgPick(e) {
+  const file = e.target.files[0]; if (!file) return;
+  document.getElementById('img-filename').textContent = file.name;
+  document.getElementById('img-pick-text').style.display = 'none';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const p = document.getElementById('img-preview');
+    p.src = ev.target.result; p.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveCorner() {
+  const id    = document.getElementById('field-id').value.trim();
+  const name  = document.getElementById('field-name').value.trim();
+  const gear  = document.getElementById('field-gear').value.trim();
+  const brake = document.getElementById('field-brake').value.trim();
+  const speed = document.getElementById('field-speed').value.trim();
+  const notes = document.getElementById('field-notes').value.trim();
+  const imgFile = document.getElementById('img-filename').textContent.trim();
+  if (!id) { alert('Corner ID is required (e.g. T1)'); return; }
+  if (editingCornerId) {
+    const c = currentTrack.corners.find(c => c.id === editingCornerId);
+    if (c) { c.id = id; c.label = name; c.gear = gear; c.brakePoint = brake; c.speed = speed; c.notes = notes; if (imgFile) c.imageFile = imgFile; }
+  } else {
+    if (currentTrack.corners.find(c => c.id === id)) { alert(`Corner "${id}" already exists.`); return; }
+    currentTrack.corners.push({ id, label: name, gear, brakePoint: brake, speed, notes, imageFile: imgFile || '', x: pendingCornerPos ? pendingCornerPos.x : 50, y: pendingCornerPos ? pendingCornerPos.y : 50 });
+  }
+  saveEditsToSession(); closeEditModal(); renderCorners();
+}
+
+// ─────────────────────────────
+//  VIEW CORNER MODAL + SWIPE NAV
+// ─────────────────────────────
+function openViewModal(corner, direction) {
+  currentCornerIndex = currentTrack.corners.indexOf(corner);
+  renderCornerModal(corner, direction);
+  const overlay = document.getElementById('view-modal');
+  overlay.classList.add('open');
+  // Setup touch swipe on the modal body
+  setupModalSwipe();
+}
+
+function renderCornerModal(corner, direction) {
+  const total = currentTrack.corners.length;
+  const idx   = currentCornerIndex;
+  const label = corner.label || corner.id;
+
+  // Header title
+  document.getElementById('modal-title').innerHTML =
+    `<span class="num">${corner.id}</span>${label}`;
+
+  // Nav counter + button states
+  document.getElementById('nav-counter').textContent = `${idx + 1} / ${total}`;
+  document.getElementById('nav-prev').disabled = idx === 0;
+  document.getElementById('nav-next').disabled = idx === total - 1;
+
+  // Dots
+  const dotsEl = document.getElementById('modal-dots');
+  const maxDots = 12; // cap dots for tracks with many corners
+  if (total <= maxDots) {
+    dotsEl.innerHTML = currentTrack.corners.map((_, i) =>
+      `<div class="modal-dot ${i === idx ? 'active' : ''}"></div>`).join('');
+    dotsEl.style.display = 'flex';
+  } else {
+    dotsEl.style.display = 'none';
+  }
+
+  // Slide animation
+  const body = document.getElementById('modal-body');
+  body.classList.remove('slide-left', 'slide-right');
+  if (direction === 1)  { void body.offsetWidth; body.classList.add('slide-left');  }
+  if (direction === -1) { void body.offsetWidth; body.classList.add('slide-right'); }
+
+  // Image
+  const wrap = document.getElementById('modal-img-wrap');
+  if (corner.imageFile) {
+    const src = `tracks/${currentTrack.id}/${corner.imageFile}`;
+    wrap.innerHTML = `<img class="modal-img" src="${src}" alt="${label}"
+      onerror="this.parentElement.innerHTML='<div class=modal-img-placeholder><div class=icon>📷</div><p>Image not found:<br>tracks/${currentTrack.id}/${corner.imageFile}</p></div>'">`;
+  } else {
+    wrap.innerHTML = `<div class="modal-img-placeholder"><div class="icon">📷</div><p>No image — use Edit Mode to add one</p></div>`;
+  }
+
+  // Notes
+  document.getElementById('modal-notes').innerHTML = `
+    <div class="note-chip">
+      <div class="note-chip-label">Gear</div>
+      <div class="note-chip-value gear">${corner.gear || '—'}</div>
+    </div>
+    <div class="note-chip">
+      <div class="note-chip-label">Brake Point</div>
+      <div class="note-chip-value brake">${corner.brakePoint || '—'}</div>
+    </div>
+    <div class="note-chip">
+      <div class="note-chip-label">Min Speed</div>
+      <div class="note-chip-value">${corner.speed || '—'}</div>
+    </div>
+    <div class="note-chip">
+      <div class="note-chip-label">Driver Notes</div>
+      <div class="note-chip-value small">${corner.notes || 'No notes yet.'}</div>
+    </div>`;
+}
+
+function navigateCorner(dir) {
+  const next = currentCornerIndex + dir;
+  if (next < 0 || next >= currentTrack.corners.length) return;
+  currentCornerIndex = next;
+  renderCornerModal(currentTrack.corners[currentCornerIndex], dir);
+}
+
+function setupModalSwipe() {
+  const body = document.getElementById('modal-body');
+  body.removeEventListener('touchstart', onSwipeStart);
+  body.removeEventListener('touchend',   onSwipeEnd);
+  body.addEventListener('touchstart', onSwipeStart, { passive: true });
+  body.addEventListener('touchend',   onSwipeEnd,   { passive: true });
+}
+function onSwipeStart(e) { swipeTouchStartX = e.changedTouches[0].clientX; }
+function onSwipeEnd(e) {
+  if (swipeTouchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - swipeTouchStartX;
+  swipeTouchStartX = null;
+  if (Math.abs(dx) < 40) return; // ignore small drags
+  navigateCorner(dx < 0 ? 1 : -1);
+}
+
+function closeViewModal(event) {
+  if (!event || event.target === document.getElementById('view-modal'))
+    document.getElementById('view-modal').classList.remove('open');
+}
+
+// ─────────────────────────────
+//  WEATHER
+// ─────────────────────────────
+const WEATHER_LABELS = { dry:'☀️ Dry', damp:'🌫️ Damp', mixed:'🌦️ Mixed', wet:'🌧️ Wet' };
+
+function selectWeather(w) {
+  selectedWeather = selectedWeather === w ? '' : w; // toggle
+  document.querySelectorAll('.weather-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.weather === selectedWeather);
+  });
+}
+
+function weatherTag(w) {
+  if (!w) return '';
+  return `<span class="weather-tag ${w}">${WEATHER_LABELS[w] || w}</span>`;
+}
+
+// ─────────────────────────────
+//  LAP TIMES
+// ─────────────────────────────
+function msToDisplay(ms) {
+  const min = Math.floor(ms / 60000);
+  const sec = Math.floor((ms % 60000) / 1000);
+  const msec = ms % 1000;
+  return `${min}:${String(sec).padStart(2,'0')}.${String(msec).padStart(3,'0')}`;
+}
+
+function renderLaptimes() {
+  if (!currentTrack) return;
+  const laps = getLaptimes(currentTrack.id);
+  const container = document.getElementById('laptimes-content');
+  if (!laps.length) {
+    container.innerHTML = `<div class="laptimes-empty"><div class="icon">⏱</div><p>No lap times recorded yet.<br>Tap "Add Lap Time" to log your first lap.</p></div>`;
+    return;
+  }
+  const sorted = [...laps].sort((a, b) => a.totalMs - b.totalMs);
+  container.innerHTML = `<div class="laptimes-list">${sorted.map((lap, i) => `
+    <div class="laptime-row ${i === 0 ? 'best' : ''}">
+      <div class="laptime-rank">${i === 0 ? '🏆' : '#' + (i + 1)}</div>
+      <div class="laptime-info">
+        <div class="laptime-time">${lap.display}</div>
+        <div class="laptime-car">${lap.car || 'Unknown car'}</div>
+        <div class="laptime-meta">
+          ${weatherTag(lap.weather)}
+          ${[lap.session, lap.date].filter(Boolean).join(' · ')}
+        </div>
+        ${lap.notes ? `<div class="laptime-meta" style="margin-top:3px;font-style:italic">${lap.notes}</div>` : ''}
+      </div>
+      <div class="laptime-actions">
+        <button class="laptime-action" onclick="deleteLaptime('${lap.id}')">🗑</button>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+function openLaptimeModal(id) {
+  editingLaptimeId = id;
+  let lap = null;
+  if (id) lap = getLaptimes(currentTrack.id).find(l => l.id === id);
+
+  document.getElementById('laptime-modal-title').textContent = lap ? 'Edit Lap Time' : 'Add Lap Time';
+  document.getElementById('lt-car').value     = lap ? lap.car     : '';
+  document.getElementById('lt-session').value = lap ? lap.session : '';
+  document.getElementById('lt-date').value    = lap ? lap.date    : new Date().toISOString().slice(0,10);
+  document.getElementById('lt-notes').value   = lap ? lap.notes   : '';
+
+  // Weather
+  selectedWeather = lap ? (lap.weather || '') : '';
+  document.querySelectorAll('.weather-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.weather === selectedWeather);
+  });
+
+  if (lap) {
+    const ms = lap.totalMs;
+    document.getElementById('lt-min').value = Math.floor(ms / 60000);
+    document.getElementById('lt-sec').value = Math.floor((ms % 60000) / 1000);
+    document.getElementById('lt-ms').value  = ms % 1000;
+  } else {
+    document.getElementById('lt-min').value = '';
+    document.getElementById('lt-sec').value = '';
+    document.getElementById('lt-ms').value  = '';
+  }
+  document.getElementById('laptime-modal').classList.add('open');
+  setTimeout(() => document.getElementById('lt-car').focus(), 100);
+}
+
+function closeLaptimeModal() {
+  document.getElementById('laptime-modal').classList.remove('open');
+  editingLaptimeId = null;
+}
+
+function saveLapTime() {
+  const car     = document.getElementById('lt-car').value.trim();
+  const min     = parseInt(document.getElementById('lt-min').value) || 0;
+  const sec     = parseInt(document.getElementById('lt-sec').value) || 0;
+  const ms      = parseInt(document.getElementById('lt-ms').value)  || 0;
+  const session = document.getElementById('lt-session').value.trim();
+  const date    = document.getElementById('lt-date').value;
+  const notes   = document.getElementById('lt-notes').value.trim();
+  const weather = selectedWeather;
+
+  if (!car) { alert('Please enter the car name / setup.'); return; }
+  if (min === 0 && sec === 0 && ms === 0) { alert('Please enter a lap time.'); return; }
+
+  const totalMs = min * 60000 + sec * 1000 + ms;
+  const display = msToDisplay(totalMs);
+
+  let laps = getLaptimes(currentTrack.id);
+  if (editingLaptimeId) {
+    const idx = laps.findIndex(l => l.id === editingLaptimeId);
+    if (idx !== -1) laps[idx] = { ...laps[idx], car, totalMs, display, session, date, notes, weather };
+  } else {
+    laps.push({ id: Date.now().toString(), car, totalMs, display, session, date, notes, weather });
+  }
+  saveLaptimes(currentTrack.id, laps);
+  closeLaptimeModal();
+  renderLaptimes();
+}
+
+function deleteLaptime(id) {
+  if (!confirm('Delete this lap time?')) return;
+  const laps = getLaptimes(currentTrack.id).filter(l => l.id !== id);
+  saveLaptimes(currentTrack.id, laps);
+  renderLaptimes();
+}
+
+// ─────────────────────────────
+//  EXPORT
+// ─────────────────────────────
+function showExportModal() { document.getElementById('export-modal').classList.add('open'); }
+function closeExportModal() { document.getElementById('export-modal').classList.remove('open'); }
+
+function downloadDataFile() {
+  const exportTracks = tracks.map(t => ({
+    id: t.id, name: t.name, country: t.country,
+    corners: t.corners.map(c => ({ id: c.id, label: c.label || '', gear: c.gear || '', brakePoint: c.brakePoint || '', speed: c.speed || '', notes: c.notes || '', imageFile: c.imageFile || '', x: c.x, y: c.y }))
+  }));
+  const js = `// GT3 Corner Guide — Track Data\n// Auto-generated by Edit Mode.\n\nconst tracks = ${JSON.stringify(exportTracks, null, 2)};\n`;
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([js], { type: 'application/javascript' })), download: 'data.js' });
+  a.click(); closeExportModal();
+}
+
+function saveEditsToSession() {
+  try {
+    const edits = {};
+    tracks.forEach(t => { edits[t.id] = t.corners; });
+    localStorage.setItem('gt3_edits', JSON.stringify(edits));
+  } catch(e) {}
+}
+
+document.addEventListener('keydown', e => {
+  const modalOpen = document.getElementById('view-modal').classList.contains('open');
+  if (e.key === 'Escape') {
+    closeViewModal(); closeEditModal(); closeExportModal(); closeLaptimeModal();
+    document.querySelectorAll('.corner-edit-actions').forEach(el => el.remove());
+  }
+  if (modalOpen && e.key === 'ArrowRight') navigateCorner(1);
+  if (modalOpen && e.key === 'ArrowLeft')  navigateCorner(-1);
+});
+
+// ── Register Service Worker (PWA offline support) ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+
+init();
+</script>
+</body>
+</html>
