@@ -1,56 +1,94 @@
 // ACC Track Guides — Service Worker
-// Bump the version string any time you want to force a cache refresh
-const CACHE = 'acc-guides-v1';
+// Strategy: network-first for HTML + data.js (always get latest),
+// cache-first for images (they rarely change, big files).
+// Bump CACHE_VERSION any time you want to force a full refresh.
+const CACHE_VERSION = 'v2';
+const CACHE = 'acc-guides-' + CACHE_VERSION;
 
-// Files to cache immediately on install
-const PRECACHE = [
+const ALWAYS_FRESH = [
   './index.html',
   './data.js',
-  './manifest.json'
+  './manifest.json',
+  './sw.js'
 ];
 
-// ── Install: cache core files ──
+// ── Install: pre-cache the core files ──
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(cache => cache.addAll(PRECACHE))
+      .then(cache => cache.addAll(ALWAYS_FRESH))
       .then(() => self.skipWaiting())
   );
 });
 
-// ── Activate: remove old caches ──
+// ── Activate: delete any old caches ──
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    caches.keys()
+      .then(keys => Promise.all(
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+      ))
+      .then(() => self.clients.claim())
   );
 });
 
-// ── Fetch: cache-first for same-origin assets, network-first for everything else ──
+// ── Fetch ──
 self.addEventListener('fetch', e => {
-  // Only handle GET requests
   if (e.request.method !== 'GET') return;
 
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
+  const url = new URL(e.request.url);
+  const filename = url.pathname.split('/').pop();
+  const isCore = ALWAYS_FRESH.some(f => url.pathname.endsWith(f.replace('./', '/')));
+  const isImage = /\.(png|jpg|jpeg|webp|gif|svg)$/i.test(filename);
 
-      return fetch(e.request)
+  if (isCore) {
+    // Network-first: try to get the latest from GitHub,
+    // fall back to cache if offline.
+    e.respondWith(
+      fetch(e.request)
         .then(response => {
-          // Cache any successful same-origin response (images, etc.)
-          if (response.ok && response.type === 'basic') {
+          if (response.ok) {
             const clone = response.clone();
             caches.open(CACHE).then(cache => cache.put(e.request, clone));
           }
           return response;
         })
-        .catch(() => {
-          // Offline fallback for navigation requests
-          if (e.request.mode === 'navigate') {
-            return caches.match('./index.html');
+        .catch(() => caches.match(e.request))
+    );
+
+  } else if (isImage) {
+    // Cache-first for images: serve instantly from cache,
+    // but fetch + update cache in background (stale-while-revalidate).
+    e.respondWith(
+      caches.open(CACHE).then(cache =>
+        cache.match(e.request).then(cached => {
+          const fetchPromise = fetch(e.request).then(response => {
+            if (response.ok) cache.put(e.request, response.clone());
+            return response;
+          }).catch(() => cached);
+          return cached || fetchPromise;
+        })
+      )
+    );
+
+  } else {
+    // Everything else: network with cache fallback
+    e.respondWith(
+      fetch(e.request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE).then(cache => cache.put(e.request, clone));
           }
-        });
-    })
-  );
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+  }
 });
+
+// ── Tell all open tabs to reload when a new SW takes over ──
+self.addEventListener('message', e => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
+});
+
