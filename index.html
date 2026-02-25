@@ -98,7 +98,6 @@
   .tab-panel.active { display: block; }
 
   /* ── MAP PANEL ── */
-  /* KEY FIX #1: map fills viewport height minus header/tabs */
   .map-container {
     margin: 20px;
     background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
@@ -106,23 +105,38 @@
   .map-instruction { text-align: center; font-size: 12px; color: var(--muted); padding: 8px; letter-spacing: .05em; border-bottom: 1px solid var(--border); }
   .map-instruction span { color: var(--accent); }
   .map-instruction.edit-hint span { color: var(--edit); }
-  .map-inner { position: relative; width: 100%; }
+
+  /* map-inner wraps the image + the overlay in a white-padded box */
+  .map-inner {
+    position: relative;
+    width: 100%;
+    background: #ffffff;
+    padding: 20px;
+    box-sizing: border-box;
+  }
   .map-inner.edit-cursor { cursor: crosshair; }
 
-  /* KEY FIX #1: image fills container width AND constrains height so it never overflows */
+  /* The image fills the padded inner area with no extra padding of its own */
   .track-map-img {
     width: 100%;
     height: auto;
-    max-height: calc(100vh - 220px); /* viewport minus header + tabs + toolbar */
+    max-height: calc(100vh - 260px);
     display: block;
     object-fit: contain;
-    background: #ffffff;
-    padding: 20px;
     user-select: none;
     -webkit-user-drag: none;
+    /* no padding here — padding is on .map-inner */
   }
 
-  /* Corner buttons */
+  /* Overlay sits exactly on top of the image, used for corner buttons */
+  .map-overlay {
+    position: absolute;
+    /* These values are set by JS to match the image's rendered rect */
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; /* overlay itself is transparent to clicks */
+  }
+
+  /* Corner buttons live inside .map-overlay */
   .corner-btn {
     position: absolute; width: 34px; height: 34px; border-radius: 50%;
     background: var(--accent2); border: 2px solid var(--accent); color: #fff;
@@ -130,13 +144,14 @@
     cursor: pointer; display: flex; align-items: center; justify-content: center;
     transform: translate(-50%,-50%); transition: background .15s, transform .15s;
     animation: pulse 2.5s infinite; z-index: 10;
+    pointer-events: all; /* buttons are clickable even though overlay isn't */
   }
   .corner-btn:hover, .corner-btn:active { background: var(--accent); color: #000; transform: translate(-50%,-50%) scale(1.2); animation: none; }
   @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(255,68,0,.5)}70%{box-shadow:0 0 0 8px rgba(255,68,0,0)}100%{box-shadow:0 0 0 0 rgba(255,68,0,0)} }
   .corner-btn.edit-mode { background: var(--edit); border-color: #fff; color: #000; animation: none; cursor: grab; }
   .corner-btn.edit-mode:hover { background: #fff; transform: translate(-50%,-50%) scale(1.15); }
   .corner-btn.edit-mode.dragging { cursor: grabbing; transform: translate(-50%,-50%) scale(1.2); opacity: .85; }
-  .corner-edit-actions { position: absolute; display: flex; gap: 4px; z-index: 20; transform: translateX(-50%); white-space: nowrap; }
+  .corner-edit-actions { position: absolute; display: flex; gap: 4px; z-index: 20; transform: translateX(-50%); white-space: nowrap; pointer-events: all; }
   .corner-action-btn { font-size: 10px; font-weight: 700; letter-spacing: .05em; padding: 3px 7px; border-radius: 2px; cursor: pointer; border: none; font-family: 'Barlow Condensed', sans-serif; }
   .corner-action-btn.edit-btn { background: var(--edit); color: #000; }
   .corner-action-btn.del-btn { background: var(--accent2); color: #fff; }
@@ -421,6 +436,7 @@
       </div>
       <div class="map-inner" id="map-inner">
         <img class="track-map-img" id="track-map-img" src="" alt="Track map" draggable="false">
+        <div class="map-overlay" id="map-overlay"></div>
       </div>
     </div>
     <div class="edit-toolbar" id="edit-toolbar">
@@ -685,6 +701,8 @@ function switchTab(tab) {
 // ─────────────────────────────
 //  TRACK VIEW
 // ─────────────────────────────
+let mapResizeObserver = null;
+
 function showTrack(id) {
   currentTrack = tracks.find(t => t.id === id);
   if (!currentTrack) return;
@@ -700,15 +718,20 @@ function showTrack(id) {
   document.getElementById('map-inner').classList.toggle('edit-cursor', editMode);
   document.getElementById('map-inner').onclick = handleMapClick;
 
-  img.onload = () => renderCorners();
-  if (img.complete && img.naturalWidth > 0) renderCorners();
-  updateMapInstruction();
+  img.onload = () => { syncOverlay(); renderCorners(); };
+  if (img.complete && img.naturalWidth > 0) { syncOverlay(); renderCorners(); }
 
-  // reset to map tab
+  // ResizeObserver keeps overlay in sync on rotation and window resize
+  if (mapResizeObserver) mapResizeObserver.disconnect();
+  mapResizeObserver = new ResizeObserver(() => repositionCornerButtons());
+  mapResizeObserver.observe(img);
+
+  updateMapInstruction();
   switchTab('map');
 }
 
 function showTrackList() {
+  if (mapResizeObserver) { mapResizeObserver.disconnect(); mapResizeObserver = null; }
   document.getElementById('track-view').style.display = 'none';
   document.getElementById('track-list').style.display = 'block';
   currentTrack = null;
@@ -739,12 +762,32 @@ function toggleEditMode() {
 }
 
 // ─────────────────────────────
+//  OVERLAY SYNC
+// ─────────────────────────────
+// Positions the overlay div to exactly cover the rendered image,
+// accounting for object-fit:contain letterboxing and any padding on map-inner.
+function syncOverlay() {
+  const img     = document.getElementById('track-map-img');
+  const overlay = document.getElementById('map-overlay');
+  const inner   = document.getElementById('map-inner');
+  if (!img || !overlay || !inner) return;
+  const imgRect   = img.getBoundingClientRect();
+  const innerRect = inner.getBoundingClientRect();
+  overlay.style.position = 'absolute';
+  overlay.style.left   = (imgRect.left   - innerRect.left)   + 'px';
+  overlay.style.top    = (imgRect.top    - innerRect.top)    + 'px';
+  overlay.style.width  = imgRect.width   + 'px';
+  overlay.style.height = imgRect.height  + 'px';
+}
+
+// ─────────────────────────────
 //  CORNERS
 // ─────────────────────────────
 function renderCorners() {
   document.querySelectorAll('.corner-btn, .corner-edit-actions').forEach(e => e.remove());
   if (!currentTrack) return;
   updateCornerCountLabel();
+  const overlay = document.getElementById('map-overlay');
   currentTrack.corners.forEach(corner => {
     const btn = document.createElement('button');
     btn.className = 'corner-btn' + (editMode ? ' edit-mode' : '');
@@ -758,7 +801,16 @@ function renderCorners() {
     } else {
       btn.onclick = e => { e.stopPropagation(); openViewModal(corner); };
     }
-    document.getElementById('map-inner').appendChild(btn);
+    overlay.appendChild(btn);
+  });
+}
+
+function repositionCornerButtons() {
+  if (!currentTrack) return;
+  syncOverlay();
+  currentTrack.corners.forEach(corner => {
+    const btn = document.querySelector(`.corner-btn[data-corner-id="${corner.id}"]`);
+    if (btn) { btn.style.left = corner.x + '%'; btn.style.top = corner.y + '%'; }
   });
 }
 
@@ -767,15 +819,19 @@ function updateCornerCountLabel() {
   document.getElementById('corner-count-label').textContent = `${n} corner${n !== 1 ? 's' : ''} placed`;
 }
 
+// Measure click against the image's actual rendered rect (not map-inner)
 function handleMapClick(e) {
   if (!editMode) return;
   if (e.target.classList.contains('corner-btn')) return;
   document.querySelectorAll('.corner-edit-actions').forEach(el => el.remove());
-  const img = document.getElementById('track-map-img');
+  const img  = document.getElementById('track-map-img');
   const rect = img.getBoundingClientRect();
-  const x = parseFloat(((e.clientX - rect.left) / rect.width * 100).toFixed(2));
-  const y = parseFloat(((e.clientY - rect.top)  / rect.height * 100).toFixed(2));
-  pendingCornerPos = { x, y };
+  if (e.clientX < rect.left || e.clientX > rect.right ||
+      e.clientY < rect.top  || e.clientY > rect.bottom) return;
+  pendingCornerPos = {
+    x: parseFloat(((e.clientX - rect.left) / rect.width  * 100).toFixed(2)),
+    y: parseFloat(((e.clientY - rect.top)  / rect.height * 100).toFixed(2))
+  };
   editingCornerId = null;
   openEditModal(null);
 }
@@ -797,11 +853,10 @@ function setupDrag(btn, corner) {
   function onMove(e) {
     e.preventDefault();
     const t = e.touches ? e.touches[0] : e;
-    const img = document.getElementById('track-map-img');
-    const rect = img.getBoundingClientRect();
+    const rect = document.getElementById('track-map-img').getBoundingClientRect();
     const dx = (t.clientX - startX) / rect.width  * 100;
     const dy = (t.clientY - startY) / rect.height * 100;
-    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) moved = true;
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) moved = true;
     corner.x = parseFloat(Math.max(0, Math.min(100, startLeft + dx)).toFixed(2));
     corner.y = parseFloat(Math.max(0, Math.min(100, startTop  + dy)).toFixed(2));
     btn.style.left = corner.x + '%';
@@ -819,6 +874,7 @@ function setupDrag(btn, corner) {
 
 function showCornerEditActions(corner, btn) {
   document.querySelectorAll('.corner-edit-actions').forEach(el => el.remove());
+  const overlay = document.getElementById('map-overlay');
   const actions = document.createElement('div');
   actions.className = 'corner-edit-actions';
   actions.style.left = corner.x + '%';
@@ -830,7 +886,7 @@ function showCornerEditActions(corner, btn) {
   delBtn.className = 'corner-action-btn del-btn'; delBtn.textContent = 'Delete';
   delBtn.onclick = e => { e.stopPropagation(); deleteCorner(corner.id); };
   actions.appendChild(editBtn); actions.appendChild(delBtn);
-  document.getElementById('map-inner').appendChild(actions);
+  overlay.appendChild(actions);
 }
 
 function deleteCorner(id) {
