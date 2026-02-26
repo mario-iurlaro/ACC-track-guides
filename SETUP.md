@@ -1,139 +1,207 @@
-# ACC Track Guides — GitHub Pages Setup & Update Guide
+# ACC Track Guides — Setup & User Guide
+
+A personal GT3 corner reference app that runs as a PWA on your iPad and laptop browser. Corner markers, braking notes, lap times, and track images — all synced automatically via GitHub.
 
 ---
 
-## 📁 Your complete file structure
+## 📁 File Structure
 
 ```
-acc-track-guides/          ← this is your GitHub repo folder
+acc-track-guides/
 │
-├── index.html             ← the app
-├── data.js                ← all track + corner data
-├── manifest.json          ← PWA config (don't edit)
-├── sw.js                  ← offline service worker (don't edit)
+├── index.html          ← the entire app
+├── data.js             ← all track, corner, and lap time data
+├── manifest.json       ← PWA config
+├── sw.js               ← service worker
 │
 ├── icons/
-│   ├── icon-192.png       ← home screen icon
+│   ├── icon-192.png
 │   └── icon-512.png
 │
 └── tracks/
     ├── spa/
-    │   ├── track.png
-    │   ├── t1.png
+    │   ├── track.png       ← circuit map image
+    │   ├── t1.png          ← braking zone images
     │   └── ...
-    └── nurburgring/
+    └── monza/
         ├── track.png
         └── ...
 ```
 
 ---
 
-## 🚀 One-time Setup (do this once)
+## 🚀 One-Time Setup
 
-### Step 1 — Create a GitHub repo
+### 1. Create a GitHub repo
 
-1. Go to [github.com](https://github.com) and sign in
-2. Click **+** → **New repository**
-3. Name it `acc-track-guides` (or anything you like)
-4. Set it to **Public** ← this is required for free GitHub Pages
-5. Leave everything else as default → click **Create repository**
+1. Go to [github.com](https://github.com) → **+** → **New repository**
+2. Name it `acc-track-guides` (or anything you like)
+3. Set it to **Public** (required for free GitHub Pages)
+4. Click **Create repository**
 
-### Step 2 — Upload your files
+### 2. Upload your files
 
-1. In your new empty repo, click **Add file → Upload files**
-2. Drag in the entire contents of your app folder:
-   - `index.html`
-   - `data.js`
-   - `manifest.json`
-   - `sw.js`
-   - The `icons/` folder
-   - The `tracks/` folder (with all your images)
-3. Scroll down → click **Commit changes**
+1. In the new repo click **Add file → Upload files**
+2. Drag in everything: `index.html`, `data.js`, `manifest.json`, `sw.js`, the `icons/` folder, and the `tracks/` folder
+3. Click **Commit changes**
 
-> ⚠️ GitHub's web uploader handles folders fine — just drag the whole lot in at once.
+### 3. Enable GitHub Pages
 
-### Step 3 — Enable GitHub Pages
+1. Repo → **Settings** → **Pages**
+2. Under Branch select `main` → folder `/root` → **Save**
+3. Wait ~60 seconds — your URL will appear: `https://yourusername.github.io/acc-track-guides/`
 
-1. In your repo, click **Settings** (top tab)
-2. In the left sidebar, click **Pages**
-3. Under **Branch**, select `main` → folder `/root` → click **Save**
-4. Wait ~60 seconds, then refresh the page
-5. You'll see: *"Your site is live at https://yourusername.github.io/acc-track-guides/"*
+### 4. Generate a GitHub Personal Access Token
 
-### Step 4 — Install on iPad
+1. github.com → profile picture (top right) → **Settings**
+2. Scroll to the very bottom of the left sidebar → **Developer settings**
+3. **Personal access tokens** → **Tokens (classic)**
+4. **Generate new token (classic)**
+5. Give it a name, set expiry to **No expiration**
+6. Tick only the top-level **`repo`** checkbox
+7. Click **Generate token** — copy it immediately (shown only once, starts with `ghp_`)
 
-1. Open Safari on your iPad
-2. Go to your URL: `https://yourusername.github.io/acc-track-guides/`
-3. Tap the **Share** button (box with arrow) → **Add to Home Screen**
-4. Name it **ACC Guides** → tap **Add**
-5. The app icon appears on your home screen — tap it to launch full screen ✅
+### 5. Configure the app
+
+1. Open your GitHub Pages URL in Safari (iPad) or any browser (laptop)
+2. Tap the **⚙️** icon in the top-right corner
+3. Enter your GitHub username, repo name, and token
+4. Tap **Save Settings**
+
+Settings are stored in your browser's cookies and localStorage and survive cache clears. You only need to do this once per device.
+
+### 6. Install on iPad as a home screen app
+
+1. Open Safari on iPad → navigate to your GitHub Pages URL
+2. Tap **Share** → **Add to Home Screen** → **Add**
+3. The ACC Guides icon appears on your home screen — tap it to launch full-screen ✅
 
 ---
 
-## 🔄 Adding a New Track (the ongoing workflow)
+## 📱 Using the App
 
-This is what you'll do every time you want to add a track:
+### Viewing corners
 
-### Add the track images
+- Tap a track card to open it
+- Tap any corner marker on the map to open the braking notes popup
+- Swipe left/right in the popup to move between corners
+- On laptop: use ← → arrow keys to navigate
 
-1. Go to your repo on github.com
-2. Navigate into the `tracks/` folder
-3. Click **Add file → Upload files**
-4. Create a new subfolder by typing the track name in the path box,
-   e.g. type `monza/` then upload:
-   - `track.png` ← the circuit map
-   - `t1.png`, `t2.png` etc. ← braking zone images
-5. Commit
+### Lap Times
 
-### Add the track data
+- Tap the **⏱ Lap Times** tab on any track
+- Tap **+ Add Lap Time** to log a lap — enter car/setup, time, weather condition, session, date, and notes
+- Laps are ranked fastest first, best lap shown with 🏆
+- Best lap time is shown on the track selection card
 
-1. Click on `data.js` in your repo
-2. Click the **✏️ pencil** (Edit) icon
-3. Add your new track at the end of the `tracks` array — copy this template:
+---
+
+## ✏️ Edit Mode
+
+Tap **✏️ Edit Mode** in the header. A blue bar at the top confirms you're in edit mode.
+
+### Placing a corner
+
+1. Tap anywhere on the track map — a form opens
+2. Fill in: Corner ID (e.g. `T1`), name, gear, brake point, speed, notes, and image
+3. Tap **Save Corner** — the marker appears on the map
+
+### Moving a corner
+
+Drag any marker to reposition it.
+
+### Editing or deleting a corner
+
+**Tap** (don't drag) a marker in edit mode — an **Edit / Delete** popup appears.
+
+### Adding images to a corner
+
+The image picker has two tabs:
+
+**⬆ Upload** — pick a photo from your device. It will be uploaded automatically to `tracks/[trackid]/` on GitHub when you Push.
+
+**📁 From GitHub** — shows thumbnails of images already in `tracks/[trackid]/` on GitHub. Tap one to select it — no upload needed. Useful when switching between devices or reusing photos across corners.
+
+### Saving your edits
+
+Tap **⬆ Push to GitHub** in the toolbar when you're done.
+
+This does everything in one step:
+- Uploads any new images to the correct `tracks/` folder on GitHub
+- Commits the updated `data.js` (corners + lap times) to your repo
+- Both devices pick up the changes automatically on next open — no cache clearing needed
+
+The status indicator in the header shows:
+| Status | Meaning |
+|---|---|
+| 🟡 ● Unsaved changes | Edits made, not yet pushed |
+| 🔵 ⟳ Pushing… | In progress |
+| 🟢 ✓ Pushed to GitHub | Done — both devices will update |
+| 🔴 ✗ Push failed | Usually a token issue — tap ⚙️ |
+
+---
+
+## ➕ Adding a New Track
+
+### 1. Upload the track map
+
+In your GitHub repo: navigate to `tracks/` → **Add file → Upload files** → type `newtrackid/track.png` in the path field to create the subfolder, upload your circuit map, commit.
+
+### 2. Add the track entry to data.js
+
+In your repo, click `data.js` → ✏️ edit → add a new object to the `tracks` array:
 
 ```js
-  {
-    "id": "monza",
-    "name": "Autodromo Nazionale di Monza",
-    "country": "Italy 🇮🇹",
-    "corners": []
-  }
+{
+  "id": "monza",
+  "name": "Autodromo Nazionale di Monza",
+  "country": "Italy 🇮🇹",
+  "corners": [],
+  "laptimes": []
+}
 ```
 
-4. Click **Commit changes**
+Commit the change.
 
-### Place the corners
+### 3. Place the corners
 
-Once the track appears in the app:
-1. Open the app on your iPad (pull to refresh if needed)
-2. Tap **✏️ Edit Mode**
-3. Open the track → tap the map to place corner markers visually
-4. Fill in the notes and image name for each corner
-5. Tap **⬇ Export data.js** → this downloads an updated `data.js`
-6. Go back to github.com → click `data.js` → click ✏️ pencil
-7. Select all the text, paste in the new file contents
-8. Commit → done in ~60 seconds ✅
+1. Open the app (it loads the latest `data.js` automatically)
+2. Enter **Edit Mode** → open the new track
+3. Tap the map to place each corner marker, fill in the details
+4. Tap **⬆ Push to GitHub** when done
+
+---
+
+## 🔄 Cross-Device Sync
+
+Everything syncs through GitHub:
+
+- **Corner positions, braking notes, and lap times** all live in `data.js` — push from either device to sync
+- **Braking zone images** live in `tracks/[id]/` — uploaded automatically when you push
+- The app always loads the latest `data.js` fresh on every open — no stale cache issues
+- **GitHub settings** (token, username, repo) are stored locally per browser — enter once per device, they persist through cache clears
 
 ---
 
 ## 💡 Tips
 
-- **The app updates automatically** the next time you open it after a commit
-  (or force-refresh with pull-to-refresh in Safari if it's slow)
-- **Lap times are stored locally on your iPad** — they never go to GitHub,
-  so they survive repo changes and are private to your device
-- **Corner edits** (from Edit Mode) are only saved locally until you export
-  `data.js` and commit it — always export after a session if you want to keep the work
-- If you ever want to **replace an icon**, just upload a new `icon-192.png`
-  and `icon-512.png` to the `icons/` folder and commit
+- Track map images should be **landscape PNGs** — the app scales them to fill the screen width, markers stay locked to the correct position at any screen size or orientation
+- Braking zone images can be any aspect ratio — they fill the left panel of the corner popup
+- Keep Corner IDs short (T1, T2, Bus Stop) — they're what appear on the map markers
+- If a Push fails, check your token hasn't expired: github.com → Settings → Developer settings → your token
+- To revoke access, delete the token on GitHub — generate a new one and update ⚙️ in the app
 
 ---
 
-## 🆘 Quick troubleshooting
+## 🆘 Troubleshooting
 
 | Problem | Fix |
 |---|---|
-| App shows old version | Pull to refresh in Safari, or clear website data in iPad Settings |
-| Images not showing | Check filename and folder match exactly — filenames are case-sensitive |
-| GitHub Pages URL not working | Wait 2 minutes after enabling, then hard-refresh |
-| "data.js not found" error | Make sure `data.js` is in the root of the repo, not inside a subfolder |
+| App shows old version on laptop | Open the URL in the browser (not installed PWA) and hard-refresh (Cmd+Shift+R) |
+| App shows old version on iPad | Close and reopen the app — it fetches fresh data on every launch |
+| GitHub settings lost | Re-enter in ⚙️ — only happens if both cookies and localStorage were cleared simultaneously |
+| Push fails with auth error | Token may have expired — generate a new one and update ⚙️ |
+| Images not showing in popup | Check the filename in corner details matches exactly (case-sensitive) and the file is in `tracks/[trackid]/` |
+| Corner markers in wrong position | Re-place them in Edit Mode on the device you want to use as the source of truth, then push |
+| Track not appearing | Check `data.js` has valid JSON — paste it into [jsonlint.com](https://jsonlint.com) to find any errors |
+| "From GitHub" gallery is empty | No images in `tracks/[trackid]/` yet — use the Upload tab first |
