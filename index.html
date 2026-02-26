@@ -340,6 +340,28 @@
   .img-pick-area .img-preview { max-width: 100%; max-height: 140px; object-fit: contain; display: none; }
   .img-pick-area p { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .img-filename { font-size: 11px; color: var(--edit); margin-top: 4px; word-break: break-all; }
+
+  /* Image source toggle buttons */
+  .img-source-tabs { display: flex; gap: 8px; margin-bottom: 8px; }
+  .img-source-tab {
+    font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase; padding: 5px 12px; border-radius: 3px;
+    cursor: pointer; border: 1px solid var(--border); background: none; color: var(--muted);
+    transition: all .15s;
+  }
+  .img-source-tab.active { border-color: var(--edit); color: var(--edit); background: rgba(0,200,255,.08); }
+
+  /* GitHub gallery grid */
+  .img-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; }
+  .img-gallery-item {
+    border: 2px solid var(--border); border-radius: 4px; overflow: hidden;
+    cursor: pointer; transition: border-color .15s; background: #fff; aspect-ratio: 4/3;
+  }
+  .img-gallery-item:hover { border-color: var(--edit); }
+  .img-gallery-item.selected { border-color: var(--accent); }
+  .img-gallery-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .img-gallery-loading { font-size: 12px; color: var(--muted); padding: 20px; text-align: center; }
+  .img-gallery-empty { font-size: 12px; color: var(--muted); padding: 20px; text-align: center; line-height: 1.6; }
   .edit-modal-footer { padding: 14px 18px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; background: var(--surface2); position: sticky; bottom: 0; }
   .save-btn { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 9px 20px; border-radius: 3px; cursor: pointer; border: none; background: var(--edit); color: #000; transition: background .15s; }
   .save-btn:hover { background: #00e0ff; }
@@ -522,15 +544,31 @@
       </div>
       <div class="field-group">
         <label class="field-label">Braking Zone Image</label>
-        <div class="img-pick-area" id="img-pick-area" onclick="document.getElementById('img-file-input').click()">
-          <img id="img-preview" class="img-preview" alt="preview">
-          <p id="img-pick-text">📷 Tap to select image</p>
-          <div class="img-filename" id="img-filename"></div>
+
+        <!-- Tab toggle: Upload vs GitHub gallery -->
+        <div class="img-source-tabs">
+          <button class="img-source-tab active" id="img-tab-upload" onclick="switchImgTab('upload')">⬆ Upload</button>
+          <button class="img-source-tab" id="img-tab-gallery" onclick="switchImgTab('gallery')">📁 From GitHub</button>
         </div>
-        <input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImgPick(event)">
-        <p style="font-size:11px;color:var(--muted);margin-top:4px">
-          ⚠️ Image must be in <code style="background:var(--surface2);padding:1px 4px;border-radius:2px;color:var(--edit)">tracks/[track-id]/</code> folder. Only the filename is stored.
-        </p>
+
+        <!-- Upload panel -->
+        <div id="img-panel-upload">
+          <div class="img-pick-area" id="img-pick-area" onclick="document.getElementById('img-file-input').click()">
+            <img id="img-preview" class="img-preview" alt="preview">
+            <p id="img-pick-text">📷 Tap to select image from device</p>
+            <div class="img-filename" id="img-filename"></div>
+          </div>
+          <input type="file" id="img-file-input" accept="image/*" style="display:none" onchange="handleImgPick(event)">
+          <p style="font-size:11px;color:var(--muted);margin-top:4px">Image will be uploaded to <code style="background:var(--surface2);padding:1px 4px;border-radius:2px;color:var(--edit)">tracks/[track-id]/</code> on GitHub when you push.</p>
+        </div>
+
+        <!-- GitHub gallery panel -->
+        <div id="img-panel-gallery" style="display:none">
+          <div class="img-gallery" id="img-gallery">
+            <div class="img-gallery-loading">Loading images from GitHub…</div>
+          </div>
+          <div class="img-filename" id="img-filename-gallery" style="margin-top:6px"></div>
+        </div>
       </div>
     </div>
     <div class="edit-modal-footer">
@@ -978,8 +1016,19 @@ function openEditModal(corner) {
   document.getElementById('field-brake').value = isNew ? '' : (corner.brakePoint || '');
   document.getElementById('field-speed').value = isNew ? '' : (corner.speed || '');
   document.getElementById('field-notes').value = isNew ? '' : (corner.notes || '');
-  document.getElementById('img-filename').textContent = isNew ? '' : (corner.imageFile || '');
-  document.getElementById('img-pick-text').textContent = '📷 Tap to select image';
+
+  // Reset image picker state
+  pendingImgFile = null;
+  selectedImgName = !isNew ? (corner.imageFile || '') : '';
+  activeImgTab = 'upload';
+  document.getElementById('img-tab-upload').classList.add('active');
+  document.getElementById('img-tab-gallery').classList.remove('active');
+  document.getElementById('img-panel-upload').style.display = 'block';
+  document.getElementById('img-panel-gallery').style.display = 'none';
+  document.getElementById('img-filename').textContent = selectedImgName;
+  document.getElementById('img-filename-gallery').textContent = '';
+  document.getElementById('img-file-input').value = '';
+
   const preview = document.getElementById('img-preview');
   if (!isNew && corner.imageFile) {
     preview.src = `tracks/${currentTrack.id}/${corner.imageFile}`;
@@ -998,8 +1047,32 @@ function closeEditModal() {
   pendingCornerPos = null; editingCornerId = null;
 }
 
+// ─────────────────────────────
+//  IMAGE PICKER
+// ─────────────────────────────
+let pendingImgFile = null;    // File object waiting to be uploaded on push
+let selectedImgName = '';     // filename currently selected (either tab)
+let activeImgTab = 'upload';  // 'upload' or 'gallery'
+
+function switchImgTab(tab) {
+  activeImgTab = tab;
+  document.getElementById('img-tab-upload').classList.toggle('active',  tab === 'upload');
+  document.getElementById('img-tab-gallery').classList.toggle('active', tab === 'gallery');
+  document.getElementById('img-panel-upload').style.display  = tab === 'upload'  ? 'block' : 'none';
+  document.getElementById('img-panel-gallery').style.display = tab === 'gallery' ? 'block' : 'none';
+  if (tab === 'gallery') loadGallery();
+}
+
+function setSelectedImg(name) {
+  selectedImgName = name;
+}
+
+// ── Upload tab: user picks a file from device ──
 function handleImgPick(e) {
-  const file = e.target.files[0]; if (!file) return;
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingImgFile = file;
+  setSelectedImg(file.name);
   document.getElementById('img-filename').textContent = file.name;
   document.getElementById('img-pick-text').style.display = 'none';
   const reader = new FileReader();
@@ -1010,6 +1083,87 @@ function handleImgPick(e) {
   reader.readAsDataURL(file);
 }
 
+// ── Gallery tab: fetch image list from GitHub ──
+async function loadGallery() {
+  const gallery = document.getElementById('img-gallery');
+  const s = getGhSettings();
+  if (!s.token) {
+    gallery.innerHTML = `<div class="img-gallery-empty">Set up GitHub in ⚙️ settings first.</div>`;
+    return;
+  }
+  gallery.innerHTML = `<div class="img-gallery-loading">⟳ Loading…</div>`;
+  try {
+    const url = `https://api.github.com/repos/${s.user}/${s.repo}/contents/tracks/${currentTrack.id}`;
+    const res = await fetch(url, {
+      headers: { 'Authorization': `token ${s.token}`, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (res.status === 404) {
+      gallery.innerHTML = `<div class="img-gallery-empty">No images found in tracks/${currentTrack.id}/.<br>Upload some first using the ⬆ Upload tab.</div>`;
+      return;
+    }
+    const files = await res.json();
+    const images = files.filter(f => /\.(png|jpg|jpeg|webp|gif)$/i.test(f.name) && f.name !== 'track.png');
+    if (!images.length) {
+      gallery.innerHTML = `<div class="img-gallery-empty">No braking images found in tracks/${currentTrack.id}/.<br>Upload some first using the ⬆ Upload tab.</div>`;
+      return;
+    }
+    gallery.innerHTML = '';
+    images.forEach(f => {
+      const item = document.createElement('div');
+      item.className = 'img-gallery-item' + (f.name === selectedImgName ? ' selected' : '');
+      item.dataset.name = f.name;
+      // Use the raw GitHub URL for the thumbnail
+      const rawUrl = `https://raw.githubusercontent.com/${s.user}/${s.repo}/main/tracks/${currentTrack.id}/${f.name}`;
+      item.innerHTML = `<img src="${rawUrl}" alt="${f.name}" loading="lazy">`;
+      item.onclick = () => {
+        document.querySelectorAll('.img-gallery-item').forEach(el => el.classList.remove('selected'));
+        item.classList.add('selected');
+        setSelectedImg(f.name);
+        document.getElementById('img-filename-gallery').textContent = f.name;
+        pendingImgFile = null; // not a new upload
+      };
+      gallery.appendChild(item);
+    });
+  } catch(err) {
+    gallery.innerHTML = `<div class="img-gallery-empty">Error loading images. Check GitHub settings.</div>`;
+  }
+}
+
+// ── Upload image to GitHub ──
+async function uploadImageToGitHub(file, trackId) {
+  const s = getGhSettings();
+  if (!s.token || !file) return null;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async ev => {
+      try {
+        const base64 = ev.target.result.split(',')[1];
+        const path = `tracks/${trackId}/${file.name}`;
+        const apiUrl = `https://api.github.com/repos/${s.user}/${s.repo}/contents/${path}`;
+        const headers = {
+          'Authorization': `token ${s.token}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json'
+        };
+        // Check if file already exists (need SHA to update)
+        let sha = null;
+        const check = await fetch(apiUrl, { headers });
+        if (check.ok) { const info = await check.json(); sha = info.sha; }
+
+        const body = {
+          message: `Add image ${file.name} for ${trackId}`,
+          content: base64,
+          ...(sha ? { sha } : {})
+        };
+        const res = await fetch(apiUrl, { method: 'PUT', headers, body: JSON.stringify(body) });
+        if (!res.ok) { const err = await res.json(); throw new Error(err.message); }
+        resolve(file.name);
+      } catch(e) { reject(e); }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function saveCorner() {
   const id    = document.getElementById('field-id').value.trim();
   const name  = document.getElementById('field-name').value.trim();
@@ -1017,16 +1171,20 @@ function saveCorner() {
   const brake = document.getElementById('field-brake').value.trim();
   const speed = document.getElementById('field-speed').value.trim();
   const notes = document.getElementById('field-notes').value.trim();
-  const imgFile = document.getElementById('img-filename').textContent.trim();
   if (!id) { alert('Corner ID is required (e.g. T1)'); return; }
+
+  const imgFile = selectedImgName || '';
+
   if (editingCornerId) {
     const c = currentTrack.corners.find(c => c.id === editingCornerId);
     if (c) { c.id = id; c.label = name; c.gear = gear; c.brakePoint = brake; c.speed = speed; c.notes = notes; if (imgFile) c.imageFile = imgFile; }
   } else {
     if (currentTrack.corners.find(c => c.id === id)) { alert(`Corner "${id}" already exists.`); return; }
-    currentTrack.corners.push({ id, label: name, gear, brakePoint: brake, speed, notes, imageFile: imgFile || '', x: pendingCornerPos ? pendingCornerPos.x : 50, y: pendingCornerPos ? pendingCornerPos.y : 50 });
+    currentTrack.corners.push({ id, label: name, gear, brakePoint: brake, speed, notes, imageFile: imgFile, x: pendingCornerPos ? pendingCornerPos.x : 50, y: pendingCornerPos ? pendingCornerPos.y : 50 });
   }
-  saveEditsToSession(); closeEditModal(); renderCorners();
+  saveEditsToSession();
+  closeEditModal();
+  renderCorners();
 }
 
 // ─────────────────────────────
@@ -1283,52 +1441,42 @@ function buildDataJs() {
 
 async function pushToGitHub() {
   const s = getGhSettings();
-  if (!s.token) {
-    openGhSettings();
-    return;
-  }
+  if (!s.token) { openGhSettings(); return; }
 
   setSyncStatus('saving', '⟳ Pushing…');
   const btn = document.getElementById('push-btn');
   btn.disabled = true;
 
   try {
+    // 1. Upload any pending image file first
+    if (pendingImgFile && currentTrack) {
+      setSyncStatus('saving', '⟳ Uploading image…');
+      await uploadImageToGitHub(pendingImgFile, currentTrack.id);
+      pendingImgFile = null;
+    }
+
+    // 2. Push data.js
+    setSyncStatus('saving', '⟳ Pushing data…');
     const apiBase = `https://api.github.com/repos/${s.user}/${s.repo}/contents/data.js`;
     const headers = {
       'Authorization': `token ${s.token}`,
       'Accept': 'application/vnd.github.v3+json',
       'Content-Type': 'application/json'
     };
-
-    // 1. Get current file SHA (required by GitHub API to update a file)
     let sha = null;
     const getRes = await fetch(apiBase, { headers });
-    if (getRes.ok) {
-      const info = await getRes.json();
-      sha = info.sha;
-    } else if (getRes.status !== 404) {
-      throw new Error(`GitHub error: ${getRes.status}`);
-    }
+    if (getRes.ok) { const info = await getRes.json(); sha = info.sha; }
+    else if (getRes.status !== 404) throw new Error(`GitHub error: ${getRes.status}`);
 
-    // 2. Push updated data.js
     const content = btoa(unescape(encodeURIComponent(buildDataJs())));
     const body = {
       message: `Update data.js — ${new Date().toISOString().slice(0,16).replace('T',' ')}`,
       content,
       ...(sha ? { sha } : {})
     };
+    const putRes = await fetch(apiBase, { method: 'PUT', headers, body: JSON.stringify(body) });
+    if (!putRes.ok) { const err = await putRes.json(); throw new Error(err.message || `HTTP ${putRes.status}`); }
 
-    const putRes = await fetch(apiBase, {
-      method: 'PUT', headers,
-      body: JSON.stringify(body)
-    });
-
-    if (!putRes.ok) {
-      const err = await putRes.json();
-      throw new Error(err.message || `HTTP ${putRes.status}`);
-    }
-
-    // 3. Clear local unsaved-edits cache now that GitHub is the source of truth
     localStorage.removeItem('gt3_edits');
     setSyncStatus('saved', '✓ Pushed to GitHub');
     setTimeout(() => setSyncStatus(''), 3000);
