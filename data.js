@@ -14,7 +14,7 @@ const tracks = [
         "brakePoint": "~100m board",
         "speed": "~70 km/h",
         "notes": "Hard trail brake into tight hairpin. Apex late. Kerb on exit is safe.",
-        "imageFile": "t1.png",
+        "imageFile": "t1.jpg",
         "x": 11.47,
         "y": 82.91
       },
