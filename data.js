@@ -3,9 +3,9 @@
 
 const tracks = [
   {
-    "id": "spa",
-    "name": "Circuit de Spa-Francorchamps",
-    "country": "Belgium \ud83c\udde7\ud83c\uddea",
+    "id": "brand_hatch",
+    "name": "Brands Hatch",
+    "country": "United Kingodm \ud83c\uddec\ud83c\udde7",
     "corners": [
       {
         "id": "T1",
