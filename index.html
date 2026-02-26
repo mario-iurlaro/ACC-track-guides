@@ -106,7 +106,7 @@
   .map-instruction span { color: var(--accent); }
   .map-instruction.edit-hint span { color: var(--edit); }
 
-  /* map-inner: white background with padding, not position:relative */
+  /* map-inner: white padded area around the image */
   .map-inner {
     width: 100%;
     background: #ffffff;
@@ -115,19 +115,20 @@
   }
   .map-inner.edit-cursor { cursor: crosshair; }
 
-  /* map-img-wrap: tight wrapper around the image, this is where % positioning works */
+  /* map-img-wrap: shrink-wraps the image exactly — this is the coordinate space for corner buttons */
   .map-img-wrap {
     position: relative;
     display: block;
-    line-height: 0; /* prevent gap under image */
+    line-height: 0;
+    max-height: calc(100vh - 260px);
+    overflow: hidden;
   }
 
+  /* Image fills 100% of the wrap width, height scales naturally — NO object-fit */
   .track-map-img {
     width: 100%;
     height: auto;
-    max-height: calc(100vh - 260px);
     display: block;
-    object-fit: contain;
     user-select: none;
     -webkit-user-drag: none;
   }
@@ -655,13 +656,22 @@ let swipeTouchStartX = null;
 let mapResizeObserver = null;
 
 // ─────────────────────────────
-//  GITHUB SETTINGS (stored only in localStorage on this device)
+//  GITHUB SETTINGS
+//  Stored in cookies (survive cache clears, unlike localStorage)
 // ─────────────────────────────
+function setCookie(name, value, days = 3650) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/;SameSite=Strict`;
+}
+function getCookie(name) {
+  const m = document.cookie.match('(?:^|; )' + name + '=([^;]*)');
+  return m ? decodeURIComponent(m[1]) : '';
+}
 function getGhSettings() {
   return {
-    user:  localStorage.getItem('gh_user')  || '',
-    repo:  localStorage.getItem('gh_repo')  || '',
-    token: localStorage.getItem('gh_token') || ''
+    user:  getCookie('gh_user'),
+    repo:  getCookie('gh_repo'),
+    token: getCookie('gh_token')
   };
 }
 function openGhSettings() {
@@ -679,9 +689,9 @@ function saveGhSettings() {
   const repo  = document.getElementById('gh-repo').value.trim();
   const token = document.getElementById('gh-token').value.trim();
   if (!user || !repo || !token) { alert('All three fields are required.'); return; }
-  localStorage.setItem('gh_user', user);
-  localStorage.setItem('gh_repo', repo);
-  localStorage.setItem('gh_token', token);
+  setCookie('gh_user',  user);
+  setCookie('gh_repo',  repo);
+  setCookie('gh_token', token);
   closeGhSettings();
   setSyncStatus('saved', '✓ Settings saved');
   setTimeout(() => setSyncStatus(''), 2500);
