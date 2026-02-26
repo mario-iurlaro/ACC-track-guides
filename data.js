@@ -3,7 +3,7 @@
 
 const tracks = [
   {
-    "id": "brand_hatch",
+    "id": "brands_hatch",
     "name": "Brands Hatch",
     "country": "United Kingodm \ud83c\uddec\ud83c\udde7",
     "corners": [
