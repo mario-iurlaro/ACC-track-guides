@@ -782,8 +782,6 @@ function switchTab(tab) {
 // ─────────────────────────────
 //  TRACK VIEW
 // ─────────────────────────────
-let mapResizeObserver = null;
-
 function showTrack(id) {
   currentTrack = tracks.find(t => t.id === id);
   if (!currentTrack) return;
