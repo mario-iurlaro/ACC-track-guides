@@ -15,8 +15,8 @@ const tracks = [
         "speed": "~70 km/h",
         "notes": "Hard trail brake into tight hairpin. Apex late. Kerb on exit is safe.",
         "imageFile": "t1.png",
-        "x": 52,
-        "y": 18
+        "x": 11.47,
+        "y": 82.91
       },
       {
         "id": "T2",
@@ -37,8 +37,8 @@ const tracks = [
         "speed": "~110 km/h",
         "notes": "Two-part chicane. Brake deep. Right-left rhythm. Don't overcomplicate T5b.",
         "imageFile": "t5.png",
-        "x": 28,
-        "y": 12
+        "x": 25.82,
+        "y": 24.46
       },
       {
         "id": "T10",
@@ -48,8 +48,8 @@ const tracks = [
         "speed": "~200 km/h",
         "notes": "Fast double-apex left. Carry speed through middle. Kerb at exit is aggressive.",
         "imageFile": "t10.png",
-        "x": 18,
-        "y": 58
+        "x": 76.6,
+        "y": 46.14
       },
       {
         "id": "T15",
@@ -59,8 +59,8 @@ const tracks = [
         "speed": "~75 km/h",
         "notes": "Chicane before final sector. Brake late, use all kerbs. Exit position key for Blanchimont.",
         "imageFile": "t15.png",
-        "x": 66,
-        "y": 72
+        "x": 75.33,
+        "y": 54.99
       },
       {
         "id": "T18",
@@ -71,7 +71,7 @@ const tracks = [
         "notes": "Medium speed right-hander. Traction zone matters for long Kemmel straight.",
         "imageFile": "t18.png",
         "x": 80,
-        "y": 48
+        "y": 49.08
       }
     ],
     "laptimes": []
