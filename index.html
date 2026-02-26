@@ -657,6 +657,7 @@ let mapResizeObserver = null;
 //  GITHUB SETTINGS
 //  Stored in cookies (survive cache clears, unlike localStorage)
 // ─────────────────────────────
+// Settings stored in both cookies AND localStorage — whichever survives a cache clear
 function setCookie(name, value, days = 3650) {
   const expires = new Date(Date.now() + days * 864e5).toUTCString();
   document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/;SameSite=Strict`;
@@ -666,10 +667,11 @@ function getCookie(name) {
   return m ? decodeURIComponent(m[1]) : '';
 }
 function getGhSettings() {
+  // Try cookie first, fall back to localStorage
   return {
-    user:  getCookie('gh_user'),
-    repo:  getCookie('gh_repo'),
-    token: getCookie('gh_token')
+    user:  getCookie('gh_user')  || localStorage.getItem('gh_user')  || '',
+    repo:  getCookie('gh_repo')  || localStorage.getItem('gh_repo')  || '',
+    token: getCookie('gh_token') || localStorage.getItem('gh_token') || ''
   };
 }
 function openGhSettings() {
@@ -687,9 +689,10 @@ function saveGhSettings() {
   const repo  = document.getElementById('gh-repo').value.trim();
   const token = document.getElementById('gh-token').value.trim();
   if (!user || !repo || !token) { alert('All three fields are required.'); return; }
-  setCookie('gh_user',  user);
-  setCookie('gh_repo',  repo);
-  setCookie('gh_token', token);
+  // Save to both storages for maximum persistence
+  setCookie('gh_user', user); localStorage.setItem('gh_user', user);
+  setCookie('gh_repo', repo); localStorage.setItem('gh_repo', repo);
+  setCookie('gh_token', token); localStorage.setItem('gh_token', token);
   closeGhSettings();
   setSyncStatus('saved', '✓ Settings saved');
   setTimeout(() => setSyncStatus(''), 2500);
@@ -856,7 +859,6 @@ function renderCorners() {
     btn.style.top  = corner.y + '%';
     if (editMode) {
       setupDrag(btn, corner);
-      btn.onclick = e => { e.stopPropagation(); showCornerEditActions(corner, btn); };
     } else {
       btn.onclick = e => { e.stopPropagation(); openViewModal(corner); };
     }
@@ -886,38 +888,55 @@ function handleMapClick(e) {
 
 function setupDrag(btn, corner) {
   let startX, startY, startLeft, startTop, moved;
+
   function onStart(e) {
-    e.preventDefault(); e.stopPropagation(); moved = false;
+    e.stopPropagation();
     const t = e.touches ? e.touches[0] : e;
     startX = t.clientX; startY = t.clientY;
     startLeft = corner.x; startTop = corner.y;
-    btn.classList.add('dragging');
-    document.querySelectorAll('.corner-edit-actions').forEach(el => el.remove());
+    moved = false;
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onEnd);
     document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('touchend', onEnd);
   }
+
   function onMove(e) {
     e.preventDefault();
     const t = e.touches ? e.touches[0] : e;
     const rect = document.getElementById('map-img-wrap').getBoundingClientRect();
     const dx = (t.clientX - startX) / rect.width  * 100;
     const dy = (t.clientY - startY) / rect.height * 100;
-    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) moved = true;
-    corner.x = parseFloat(Math.max(0, Math.min(100, startLeft + dx)).toFixed(2));
-    corner.y = parseFloat(Math.max(0, Math.min(100, startTop  + dy)).toFixed(2));
-    btn.style.left = corner.x + '%';
-    btn.style.top  = corner.y + '%';
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+      if (!moved) {
+        moved = true;
+        btn.classList.add('dragging');
+        document.querySelectorAll('.corner-edit-actions').forEach(el => el.remove());
+      }
+    }
+    if (moved) {
+      corner.x = parseFloat(Math.max(0, Math.min(100, startLeft + dx)).toFixed(2));
+      corner.y = parseFloat(Math.max(0, Math.min(100, startTop  + dy)).toFixed(2));
+      btn.style.left = corner.x + '%';
+      btn.style.top  = corner.y + '%';
+    }
   }
-  function onEnd() {
+
+  function onEnd(e) {
     btn.classList.remove('dragging');
     document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
     document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
-    if (moved) saveEditsToSession();
+    if (moved) {
+      saveEditsToSession();
+    } else {
+      // It was a tap — show edit/delete actions
+      showCornerEditActions(corner, btn);
+    }
   }
+
+  // Use mousedown for desktop, touchstart for iPad
   btn.addEventListener('mousedown', onStart);
-  btn.addEventListener('touchstart', onStart, { passive: false });
+  btn.addEventListener('touchstart', onStart, { passive: true });
 }
 
 function showCornerEditActions(corner, btn) {
