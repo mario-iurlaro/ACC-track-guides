@@ -115,16 +115,14 @@
   }
   .map-inner.edit-cursor { cursor: crosshair; }
 
-  /* map-img-wrap: shrink-wraps the image exactly — this is the coordinate space for corner buttons */
+  /* map-img-wrap: exactly the same size as the image — corner % positions are relative to this */
   .map-img-wrap {
     position: relative;
     display: block;
     line-height: 0;
-    max-height: calc(100vh - 260px);
-    overflow: hidden;
   }
 
-  /* Image fills 100% of the wrap width, height scales naturally — NO object-fit */
+  /* Image scales to fit width, height follows natural aspect ratio */
   .track-map-img {
     width: 100%;
     height: auto;
@@ -1344,36 +1342,11 @@ document.addEventListener('keydown', e => {
   if (modalOpen && e.key === 'ArrowLeft')  navigateCorner(-1);
 });
 
-// ── Service Worker: register + auto-update ──
+// ── Service Worker ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-
-      // When a new SW is waiting, ask the user to reload
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New version available — show a subtle banner
-            const banner = document.createElement('div');
-            banner.style.cssText = `
-              position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
-              background:#e8ff00; color:#000; font-family:'Barlow Condensed',sans-serif;
-              font-size:14px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
-              padding:10px 20px; border-radius:4px; z-index:9999; cursor:pointer;
-              box-shadow:0 4px 20px rgba(0,0,0,.5);
-            `;
-            banner.textContent = '⟳ App updated — tap to reload';
-            banner.onclick = () => { newWorker.postMessage('skipWaiting'); location.reload(); };
-            document.body.appendChild(banner);
-          }
-        });
-      });
-
-    }).catch(err => console.warn('SW registration failed:', err));
-
-    // If the SW controller changes (new SW took over), reload cleanly
-    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+    navigator.serviceWorker.register('./sw.js')
+      .catch(err => console.warn('SW registration failed:', err));
   });
 }
 
