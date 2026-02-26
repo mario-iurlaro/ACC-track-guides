@@ -5,7 +5,7 @@ const tracks = [
   {
     "id": "brands_hatch",
     "name": "Brands Hatch",
-    "country": "United Kingodm \ud83c\uddec\ud83c\udde7",
+    "country": "United Kingodm 🇬🇧",
     "corners": [
       {
         "id": "T1",
@@ -21,13 +21,13 @@ const tracks = [
       {
         "id": "T2",
         "label": "Eau Rouge / Raidillon",
-        "gear": "5th \u2192 6th",
+        "gear": "5th → 6th",
         "brakePoint": "Flat / minor lift",
         "speed": "~270 km/h",
-        "notes": "Flat in GT3. Commit early. Car compression at bottom is key \u2014 trust it.",
+        "notes": "Flat in GT3. Commit early. Car compression at bottom is key — trust it.",
         "imageFile": "t2.png",
-        "x": 44,
-        "y": 32
+        "x": 31.61,
+        "y": 60.63
       },
       {
         "id": "T5",
@@ -78,8 +78,8 @@ const tracks = [
   },
   {
     "id": "nurburgring",
-    "name": "N\u00fcrburgring GP Circuit",
-    "country": "Germany \ud83c\udde9\ud83c\uddea",
+    "name": "Nürburgring GP Circuit",
+    "country": "Germany 🇩🇪",
     "corners": [
       {
         "id": "T1",
@@ -106,7 +106,7 @@ const tracks = [
       {
         "id": "T8",
         "label": "Schumacher S",
-        "gear": "4th \u2192 3rd",
+        "gear": "4th → 3rd",
         "brakePoint": "~90m",
         "speed": "~120 km/h",
         "notes": "Esses section. First apex leads second. Smooth inputs through here.",
