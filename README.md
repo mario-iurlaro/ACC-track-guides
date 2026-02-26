@@ -6,13 +6,13 @@ A personal corner reference app for GT3 racing, built as a Progressive Web App. 
 
 ## Features
 
-- 🗺 **Track maps** with interactive corner markers
-- 🏎 **Braking notes** per corner — gear, brake point, min speed, technique notes
-- 📷 **Braking zone images** — upload from device or pick from existing GitHub images
-- ⏱ **Lap times** with weather conditions, ranked fastest first
-- ✏️ **Edit Mode** — place and drag corner markers visually on the map
-- ☁️ **GitHub sync** — one-tap push keeps laptop and iPad in sync automatically
-- 📱 **PWA** — installs as a standalone home screen app on iPad, works offline for images
+- **Track maps** with interactive corner markers
+- **Braking notes** per corner — gear, brake point, min speed, technique notes
+- **Braking zone images** — upload from device or pick from existing GitHub images
+- **Lap times** with weather conditions, ranked fastest first
+- **Edit Mode** — place and drag corner markers visually on the map
+- **GitHub sync** — one-tap push keeps laptop and iPad in sync automatically
+- **PWA** — installs as a standalone home screen app on iPad, works offline for images
 
 ## Setup
 
