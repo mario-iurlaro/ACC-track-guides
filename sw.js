@@ -1,34 +1,23 @@
 // ACC Track Guides — Service Worker
-// Strategy:
-//   index.html + data.js → NETWORK ONLY (always fresh, never cached)
-//   everything else (images, fonts, icons) → cache-first with background refresh
+// index.html + data.js: always fetched fresh with cache-busting timestamp
+// Images/fonts: cache-first for instant offline loading
 
 const CACHE = 'acc-guides-assets-v1';
 
-// These are NEVER served from cache — always fetched live from GitHub
-const NEVER_CACHE = [
-  'index.html',
-  'data.js',
-  'sw.js',
-  'manifest.json'
-];
+const NEVER_CACHE = ['index.html', 'data.js', 'sw.js', 'manifest.json'];
 
 function isNeverCache(url) {
   return NEVER_CACHE.some(f => url.pathname.endsWith(f));
 }
 
-// ── Install: skip waiting immediately, don't pre-cache anything ──
-self.addEventListener('install', e => {
-  self.skipWaiting();
-});
+// ── Install: activate immediately ──
+self.addEventListener('install', () => self.skipWaiting());
 
-// ── Activate: take control immediately, clean up old caches ──
+// ── Activate: clean up old caches and take control ──
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
-      ))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -39,27 +28,32 @@ self.addEventListener('fetch', e => {
 
   const url = new URL(e.request.url);
 
-  // index.html, data.js etc: always go to network, no cache fallback needed
-  // (if offline, the browser shows its own offline page — acceptable)
   if (isNeverCache(url)) {
+    // Append a timestamp to bust both the SW cache AND GitHub Pages' HTTP cache
+    const bustUrl = new URL(e.request.url);
+    bustUrl.searchParams.set('_cb', Date.now());
     e.respondWith(
-      fetch(e.request, { cache: 'no-store' })
+      fetch(bustUrl.toString(), { cache: 'no-store' })
+        .catch(() => {
+          // Offline fallback: serve index.html from cache if we have it
+          if (url.pathname.endsWith('index.html') || url.pathname.endsWith('/')) {
+            return caches.match('index.html');
+          }
+        })
     );
     return;
   }
 
-  // Everything else (images, fonts, icons): cache-first, update in background
+  // Images, fonts, icons: cache-first, refresh in background
   e.respondWith(
     caches.open(CACHE).then(cache =>
       cache.match(e.request).then(cached => {
         const fetchPromise = fetch(e.request).then(response => {
           if (response.ok) cache.put(e.request, response.clone());
           return response;
-        });
+        }).catch(() => cached);
         return cached || fetchPromise;
       })
     )
   );
 });
-
-
