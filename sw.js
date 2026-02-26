@@ -2,7 +2,7 @@
 // Strategy: network-first for HTML + data.js (always get latest),
 // cache-first for images (they rarely change, big files).
 // Bump CACHE_VERSION any time you want to force a full refresh.
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE = 'acc-guides-' + CACHE_VERSION;
 
 const ALWAYS_FRESH = [
