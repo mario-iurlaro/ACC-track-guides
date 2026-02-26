@@ -20,12 +20,12 @@ const tracks = [
       },
       {
         "id": "T2",
-        "label": "Eau Rouge / Raidillon",
-        "gear": "5th → 6th",
-        "brakePoint": "Flat / minor lift",
-        "speed": "~270 km/h",
-        "notes": "Flat in GT3. Commit early. Car compression at bottom is key — trust it.",
-        "imageFile": "t2.png",
+        "label": "Druids Bend",
+        "gear": "1st",
+        "brakePoint": "",
+        "speed": "",
+        "notes": "",
+        "imageFile": "t2.jpg",
         "x": 31.61,
         "y": 60.63
       },
@@ -39,6 +39,28 @@ const tracks = [
         "imageFile": "t5.png",
         "x": 25.09,
         "y": 22.31
+      },
+      {
+        "id": "T4",
+        "label": "",
+        "gear": "",
+        "brakePoint": "",
+        "speed": "",
+        "notes": "",
+        "imageFile": "",
+        "x": 62.68,
+        "y": 86.23
+      },
+      {
+        "id": "T3",
+        "label": "Graham Hill Bend",
+        "gear": "2nd",
+        "brakePoint": "",
+        "speed": "",
+        "notes": "",
+        "imageFile": "t3.jpg",
+        "x": 23.18,
+        "y": 80.6
       }
     ],
     "laptimes": []
