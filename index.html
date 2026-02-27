@@ -289,13 +289,21 @@
   .modal-img-col {
     background: #ffffff; border-right: 1px solid var(--border);
     display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
+    overflow: hidden; position: relative;
   }
   .modal-img {
     width: 100%; height: 100%;
     object-fit: contain;
     padding: 28px;
     display: block;
+    cursor: zoom-in;
+    transition: opacity .15s;
+  }
+  .modal-img:hover { opacity: .85; }
+  .modal-img-zoom-hint {
+    position: absolute; bottom: 8px; right: 10px;
+    font-size: 11px; color: var(--muted); pointer-events: none;
+    font-family: 'Barlow Condensed', sans-serif; letter-spacing: .05em;
   }
   .modal-img-placeholder {
     display: flex; flex-direction: column; align-items: center;
@@ -303,6 +311,27 @@
   }
   .modal-img-placeholder .icon { font-size: 52px; opacity: .3; }
   .modal-img-placeholder p { font-size: 13px; line-height: 1.6; }
+
+  /* ── LIGHTBOX ── */
+  .lightbox {
+    display: none; position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,.96); align-items: center; justify-content: center;
+    cursor: zoom-out;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img {
+    max-width: 96vw; max-height: 96vh;
+    object-fit: contain;
+    border-radius: 4px;
+    animation: lightboxIn .18s ease-out;
+  }
+  @keyframes lightboxIn { from { opacity:0; transform:scale(.93); } to { opacity:1; transform:scale(1); } }
+  .lightbox-close {
+    position: absolute; top: 16px; right: 20px;
+    background: none; border: none; color: #fff;
+    font-size: 28px; cursor: pointer; opacity: .7; line-height: 1;
+  }
+  .lightbox-close:hover { opacity: 1; }
   .modal-notes-col {
     padding: 24px; display: flex; flex-direction: column;
     gap: 14px; overflow-y: auto;
@@ -1234,8 +1263,10 @@ function renderCornerModal(corner, direction) {
   const wrap = document.getElementById('modal-img-wrap');
   if (corner.imageFile) {
     const src = `tracks/${currentTrack.id}/${corner.imageFile}`;
-    wrap.innerHTML = `<img class="modal-img" src="${src}" alt="${label}"
-      onerror="this.parentElement.innerHTML='<div class=modal-img-placeholder><div class=icon>📷</div><p>Image not found:<br>tracks/${currentTrack.id}/${corner.imageFile}</p></div>'">`;
+    wrap.innerHTML = `
+      <img class="modal-img" src="${src}" alt="${label}" onclick="openLightbox(this.src)"
+        onerror="this.parentElement.innerHTML='<div class=modal-img-placeholder><div class=icon>📷</div><p>Image not found:<br>tracks/${currentTrack.id}/${corner.imageFile}</p></div>'">
+      <div class="modal-img-zoom-hint">🔍 tap to expand</div>`;
   } else {
     wrap.innerHTML = `<div class="modal-img-placeholder"><div class="icon">📷</div><p>No image — use Edit Mode to add one</p></div>`;
   }
@@ -1306,8 +1337,18 @@ function weatherTag(w) {
 }
 
 // ─────────────────────────────
-//  LAP TIMES
+//  LIGHTBOX
 // ─────────────────────────────
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lightbox-img').src = '';
+}
+
+
 function msToDisplay(ms) {
   const min = Math.floor(ms / 60000);
   const sec = Math.floor((ms % 60000) / 1000);
@@ -1502,7 +1543,7 @@ function saveEditsToSession() {
 document.addEventListener('keydown', e => {
   const modalOpen = document.getElementById('view-modal').classList.contains('open');
   if (e.key === 'Escape') {
-    closeViewModal(); closeEditModal(); closeGhSettings(); closeLaptimeModal();
+    closeLightbox(); closeViewModal(); closeEditModal(); closeGhSettings(); closeLaptimeModal();
     document.querySelectorAll('.corner-edit-actions').forEach(el => el.remove());
   }
   if (modalOpen && e.key === 'ArrowRight') navigateCorner(1);
@@ -1519,5 +1560,11 @@ if ('serviceWorker' in navigator) {
 
 init();
 </script>
+<!-- ── LIGHTBOX ── -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Full size braking zone image">
+</div>
+
 </body>
 </html>
